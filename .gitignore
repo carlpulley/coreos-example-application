@@ -1,0 +1,6 @@
+.idea
+target/
+lib_managed/
+tmp/
+.DS_Store
+

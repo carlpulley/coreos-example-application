@@ -44,9 +44,10 @@ libraryDependencies ++= Seq(
   logback,
   typesafe,
   // Testing
-  //scalatest % "test",
-  //scalacheck % "test",
-  akka.testkit % "test",
+  scalatest     % "test",
+  scalacheck    % "test",
+  specs2        % "test",
+  akka.testkit  % "test",
   spray.testkit % "test"
 )
 

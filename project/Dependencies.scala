@@ -30,6 +30,7 @@ object Dependencies {
   val logback    = "ch.qos.logback"     %  "logback-classic" % "1.1.2"
   val scalacheck = "org.scalacheck"     %% "scalacheck"      % "1.11.6"
   val scalatest  = "org.scalatest"      %% "scalatest"       % "2.2.1"
+  val specs2     = "org.specs2"         %% "specs2"          % "2.4.2-scalaz-7.0.6"
   val typesafe   = "com.typesafe"       %  "config"          % "1.2.1"
 
 }

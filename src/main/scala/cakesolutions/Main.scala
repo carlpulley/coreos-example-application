@@ -14,9 +14,21 @@ import spray.can.Http
 import scala.concurrent.duration._
 import scala.util._
 
+trait Util {
+
+  def toAddress(addr: String): Address = {
+    val AddressPattern = """^([\w-\.]+)://([\w-\.]+)@([\w-\.]+):(\d+)$""".r
+
+    val AddressPattern(protocol, system, address, port) = addr
+
+    Address(protocol, system, address, port.toInt)
+  }
+
+}
+
 // TODO: refactor service discovery code into a separate etcd client actor
 
-class Main extends Bootable with Configuration with ExceptionLogging {
+class Main extends Bootable with Util with Configuration with ExceptionLogging {
 
   import EtcdKeys._
 
@@ -39,9 +51,9 @@ class Main extends Bootable with Configuration with ExceptionLogging {
         response.node.nodes match {
           case Some(seedNodes) if (seedNodes.filterNot(_.key == s"/$ClusterNodes/$hostname").flatMap(_.value).nonEmpty) =>
             // At least one seed node has been retrieved from etcd
-            val nodes = seedNodes.filterNot(_.key == s"/$ClusterNodes/$hostname").flatMap(_.value)
+            val nodes = Random.shuffle(seedNodes.filterNot(_.key == s"/$ClusterNodes/$hostname").flatMap(_.value).map(toAddress))
             log.info(s"Seeding cluster using: $nodes")
-            cluster.joinSeedNodes(nodes.map(Address.apply(_, name)))
+            cluster.joinSeedNodes(nodes)
 
           case Some(_) =>
             log.error(s"Failed to retrieve any viable seed nodes - retrying in $retry seconds")
@@ -59,13 +71,13 @@ class Main extends Bootable with Configuration with ExceptionLogging {
   }
 
   def startup(): Unit = {
-    // We first ensure that we register and join our cluster!
+    // We first ensure that we register with our cluster!
     etcd.setKey(s"$ClusterNodes/$hostname", cluster.selfAddress.toString)
     // Now retrieve seed nodes and join the collective
     joinCluster()
     val applicationActor = system.actorOf(Props[HelloWorld])
     val rootService = system.actorOf(Props(new RootService(applicationActor)), "api")
-    IO(Http)(system).tell(Http.Bind(rootService, interface = config.getString("application.host"), port = config.getInt("application.port")), rootService)
+    IO(Http)(system).tell(Http.Bind(rootService, interface = config.getString("application.hostname"), port = config.getInt("application.port")), rootService)
   }
 
   def shutdown(): Unit = {

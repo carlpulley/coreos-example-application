@@ -21,7 +21,7 @@ class Main extends Bootable with Configuration with ExceptionLogging {
   import EtcdKeys._
 
   val hostname = InetAddress.getLocalHost().getHostName()
-  val name = s"${config.getString("akka.system")}-$hostname"
+  val name = config.getString("akka.system")
   val system = ActorSystem(name)
   val cluster = Cluster(system)
   val log = Logger(this.getClass)

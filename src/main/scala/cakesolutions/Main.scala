@@ -2,7 +2,7 @@ package cakesolutions
 
 import java.net.InetAddress
 
-import akka.actor.{ActorSystem, Address, Props}
+import akka.actor.{ActorSystem, AddressFromURIString, Props}
 import akka.cluster.Cluster
 import akka.io.IO
 import akka.kernel.Bootable
@@ -14,21 +14,9 @@ import spray.can.Http
 import scala.concurrent.duration._
 import scala.util._
 
-trait Util {
-
-  def toAddress(addr: String): Address = {
-    val AddressPattern = """^([\w-\.]+)://([\w-\.]+)@([\w-\.]+):(\d+)$""".r
-
-    val AddressPattern(protocol, system, address, port) = addr
-
-    Address(protocol, system, address, port.toInt)
-  }
-
-}
-
 // TODO: refactor service discovery code into a separate etcd client actor
 
-class Main extends Bootable with Util with Configuration with ExceptionLogging {
+class Main extends Bootable with Configuration with ExceptionLogging {
 
   import EtcdKeys._
 
@@ -51,7 +39,7 @@ class Main extends Bootable with Util with Configuration with ExceptionLogging {
         response.node.nodes match {
           case Some(seedNodes) if (seedNodes.filterNot(_.key == s"/$ClusterNodes/$hostname").flatMap(_.value).nonEmpty) =>
             // At least one seed node has been retrieved from etcd
-            val nodes = Random.shuffle(seedNodes.filterNot(_.key == s"/$ClusterNodes/$hostname").flatMap(_.value).map(toAddress))
+            val nodes = Random.shuffle(seedNodes.filterNot(_.key == s"/$ClusterNodes/$hostname").flatMap(_.value).map(AddressFromURIString.apply))
             log.info(s"Seeding cluster using: $nodes")
             cluster.joinSeedNodes(nodes)
 

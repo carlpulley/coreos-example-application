@@ -13,7 +13,7 @@ version := "0.1.0-SNAPSHOT"
 
 mainClass in Compile := Some("cakesolutions.Main")
 
-scalaVersion := "2.11.4"
+scalaVersion := scala
 
 scalacOptions ++= Seq(
   "-deprecation"
@@ -43,6 +43,8 @@ libraryDependencies ++= Seq(
   etcd,
   logback,
   typesafe,
+  // Debugging
+  scalacompiler,
   // Testing
   scalatest     % "test",
   scalacheck    % "test",

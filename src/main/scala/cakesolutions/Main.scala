@@ -29,9 +29,12 @@ class Main extends Bootable with Configuration with ExceptionLogging {
 
   import system.dispatcher
 
+  // Register cluster MemberUp callback
   cluster.registerOnMemberUp {
     etcd.setKey(s"$ClusterNodes/$hostname.state", "MemberUp")
   }
+  // Register shutdown callback
+  system.registerOnTermination(shutdown())
 
   /**
    * Used to retrieve (from etcd) potential seed nodes for forming our Akka cluster and to then build our cluster.
@@ -98,15 +101,12 @@ class Main extends Bootable with Configuration with ExceptionLogging {
     val applicationActor = system.actorOf(Props[HelloWorld])
     val rootService = system.actorOf(Props(new RootService(applicationActor)), "api")
     IO(Http)(system).tell(Http.Bind(rootService, interface = config.getString("application.hostname"), port = config.getInt("application.port")), rootService)
-    // Should we run the DEBUG console?
-    if (config.getBoolean("application.debug")) {
-      debug.Console()
-    }
   }
 
   def shutdown(): Unit = {
     // We first ensure that we de-register and leave the cluster!
-    etcd.deleteKey(s"$ClusterNodes/$hostname")
+    etcd.deleteKey(s"$ClusterNodes/$hostname.address")
+    etcd.deleteKey(s"$ClusterNodes/$hostname.state")
     cluster.leave(cluster.selfAddress)
     system.shutdown()
   }

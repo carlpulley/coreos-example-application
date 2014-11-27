@@ -2,6 +2,7 @@ package cakesolutions
 
 import akka.event.LoggingReceive
 import cakesolutions.logging.Logging
+import java.net.InetAddress
 
 object HelloWorld {
   case object Ping
@@ -14,7 +15,7 @@ class HelloWorld extends Logging {
 
   def receive = LoggingReceive {
     case Ping =>
-      sender() ! Pong(context.system.settings.name)
+      sender() ! Pong(InetAddress.getLocalHost.getHostAddress)
   }
 
 }

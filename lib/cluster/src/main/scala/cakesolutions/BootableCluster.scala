@@ -10,8 +10,7 @@ import net.nikore.etcd.EtcdJsonProtocol.EtcdListResponse
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
-abstract class BootableCluster(val system: ActorSystem) extends Bootable with ExceptionLogging {
-  this: etcd.Configuration =>
+abstract class BootableCluster(val system: ActorSystem) extends Bootable with Configuration with ExceptionLogging {
 
   val hostname = InetAddress.getLocalHost.getHostName
   val cluster = Cluster(system)
@@ -53,8 +52,8 @@ abstract class BootableCluster(val system: ActorSystem) extends Bootable with Ex
           updateKey = Some(updateClusterAddressKey(failureCount + 1))
       }
     } else {
-      log.error("Cluster currently does not have a state recorded for this node - shutting down!")
-      shutdown()
+      log.error(s"Cluster currently does not have a state recorded for this node - retrying in ${keyRefresh.toSeconds} seconds")
+      updateKey = Some(updateClusterAddressKey())
     }
   }
 

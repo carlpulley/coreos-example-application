@@ -1,8 +1,10 @@
 package cakesolutions
 
-import akka.actor.{Cancellable, AddressFromURIString, Address, ActorSystem}
+import akka.actor._
+import akka.cluster.ClusterEvent._
 import akka.cluster.{Cluster, MemberStatus}
 import akka.kernel.Bootable
+import cakesolutions.etcd.ClusterMonitor
 import cakesolutions.logging.Logger
 import java.net.InetAddress
 import java.util.concurrent.TimeUnit
@@ -16,46 +18,19 @@ abstract class BootableCluster(val system: ActorSystem) extends Bootable with Co
   val cluster = Cluster(system)
   val log = Logger(this.getClass)
   val clusterNodes = config.getString("etcd.akka")
-  val keyTimeout = config.getDuration("etcd.key.timeout", TimeUnit.SECONDS).seconds
-  val keyRefresh = config.getDuration("etcd.key.refresh", TimeUnit.SECONDS).seconds
-  val failureThreshold = config.getInt("etcd.key.failure.count")
   val retry = config.getDuration("akka.cluster.retry", TimeUnit.SECONDS).seconds
-
-  var updateKey: Option[Cancellable] = None
 
   import system.dispatcher
 
   // Register cluster MemberUp callback
   cluster.registerOnMemberUp {
-    etcd.setKey(s"$clusterNodes/${clusterAddressKey()}", MemberStatus.Up.toString, ttl = Some(keyTimeout))
+    etcd.setKey(s"$clusterNodes/${clusterAddressKey()}", MemberStatus.Up.toString)
+    // Subscribe to cluster membership events and maintain etcd key state
+    val monitor = system.actorOf(Props(new ClusterMonitor(s"$clusterNodes/${clusterAddressKey()}")))
+    cluster.subscribe(monitor, classOf[UnreachableMember], classOf[MemberRemoved], classOf[MemberExited], classOf[MemberUp])
   }
   // Register shutdown callback
   system.registerOnTermination(shutdown())
-
-  def updateClusterAddressKey(failureCount: Int = 0): Cancellable = system.scheduler.scheduleOnce(keyRefresh) {
-    val status = cluster.state.members.find(_.address == cluster.selfAddress).map(_.status)
-    if (status.isDefined) {
-      etcd.setKey(s"$clusterNodes/${clusterAddressKey()}", status.get.toString, ttl = Some(keyTimeout)).onComplete {
-        case Success(_) =>
-          updateKey = Some(updateClusterAddressKey())
-
-        case Failure(exn) if failureCount >= failureThreshold =>
-          log.error(s"Final try at attempting to update the etcd key: $clusterNodes/${clusterAddressKey()} - ${exceptionString(exn)}")
-          etcd.deleteKey(s"$clusterNodes/${clusterAddressKey()}").onSuccess {
-            case _ =>
-              log.info(s"Deleted key $clusterNodes/${clusterAddressKey()}")
-          }
-          updateKey = None
-
-        case Failure(exn) =>
-          log.error(s"Failed to update the etcd key on try ${failureCount + 1}: $clusterNodes/${clusterAddressKey()} - ${exceptionString(exn)}")
-          updateKey = Some(updateClusterAddressKey(failureCount + 1))
-      }
-    } else {
-      log.error(s"Cluster currently does not have a state recorded for this node - retrying in ${keyRefresh.toSeconds} seconds")
-      updateKey = Some(updateClusterAddressKey())
-    }
-  }
 
   def clusterAddressKey(): String = {
     s"${cluster.selfAddress.host.getOrElse("")}:${cluster.selfAddress.port.getOrElse(0)}"
@@ -82,7 +57,7 @@ abstract class BootableCluster(val system: ActorSystem) extends Bootable with Co
             val seedNodes =
               systemNodes
                 .filter(_.value == Some(MemberStatus.Up.toString))
-                .map(n => clusterAddress(n.key.stripSuffix(s"/$clusterNodes/")))
+                .map(n => clusterAddress(n.key.stripPrefix(s"/$clusterNodes/")))
 
             log.info(s"Joining the cluster using the seed nodes: $seedNodes")
             cluster.joinSeedNodes(seedNodes)
@@ -105,10 +80,8 @@ abstract class BootableCluster(val system: ActorSystem) extends Bootable with Co
 
   def startup(): Unit = {
     // We first setup basic cluster registration information
-    etcd.setKey(s"$clusterNodes/${clusterAddressKey()}", MemberStatus.Joining.toString, ttl = Some(keyTimeout)).onComplete {
+    etcd.setKey(s"$clusterNodes/${clusterAddressKey()}", MemberStatus.Joining.toString).onComplete {
       case Success(_) =>
-        // Ensure key TTLs are maintained
-        updateKey = Some(updateClusterAddressKey())
         // Now we retrieve seed nodes and join the collective
         joinCluster()
 
@@ -121,7 +94,6 @@ abstract class BootableCluster(val system: ActorSystem) extends Bootable with Co
   def shutdown(): Unit = {
     // We first ensure that we de-register and leave the cluster!
     etcd.deleteKey(s"$clusterNodes/${clusterAddressKey()}")
-    updateKey.map(_.cancel())
     cluster.leave(cluster.selfAddress)
     system.shutdown()
   }

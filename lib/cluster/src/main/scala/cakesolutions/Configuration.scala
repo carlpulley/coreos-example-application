@@ -1,7 +1,6 @@
-package cakesolutions.etcd
+package cakesolutions
 
-import cakesolutions.logging
-import net.nikore.etcd.EtcdClient
+import cakesolutions.etcd.Client
 
 trait Configuration extends logging.Configuration {
 

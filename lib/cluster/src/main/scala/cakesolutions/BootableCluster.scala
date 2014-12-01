@@ -92,10 +92,12 @@ abstract class BootableCluster(val system: ActorSystem) extends Bootable with Co
   }
 
   def shutdown(): Unit = {
-    // We first ensure that we de-register and leave the cluster!
-    etcd.deleteKey(s"$clusterNodes/${clusterAddressKey()}")
-    cluster.leave(cluster.selfAddress)
-    system.shutdown()
+    // First ensure that we de-register our etcd key and then we leave the cluster!
+    etcd.deleteKey(s"$clusterNodes/${clusterAddressKey()}").onComplete {
+      case _ =>
+        cluster.leave(cluster.selfAddress)
+        system.shutdown()
+    }
   }
 
 }

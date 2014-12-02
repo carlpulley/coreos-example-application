@@ -2,25 +2,32 @@ package cakesolutions
 
 package etcd
 
-import akka.actor.Actor
 import akka.cluster.ClusterEvent._
+import akka.cluster.Member
+import akka.event.LoggingReceive
+import cakesolutions.logging.{Logging => LoggingActor}
 
-class ClusterMonitor(key: String) extends Actor with Configuration {
+class ClusterMonitor(etcd: Client, key: String) extends LoggingActor {
 
-  def receive = {
-    case UnreachableMember(member) if key.endsWith(s"/${member.address.host.getOrElse("")}:${member.address.port.getOrElse(0)}") =>
+  def clusterAddressKey(member: Member): String = {
+    s"/${member.address.host.getOrElse("")}:${member.address.port.getOrElse(0)}"
+  }
+
+  def receive = LoggingReceive {
+    case UnreachableMember(member) if key.endsWith(clusterAddressKey(member)) =>
       etcd.setKey(key, "Unreachable") // Logical state - hence use of string state value
 
-    case MemberRemoved(member, _) if key.endsWith(s"/${member.address.host.getOrElse("")}:${member.address.port.getOrElse(0)}") =>
+    case MemberRemoved(member, _)  if key.endsWith(clusterAddressKey(member)) =>
       etcd.deleteKey(key)
-      context.stop(self)
 
-    case MemberExited(member) if key.endsWith(s"/${member.address.host.getOrElse("")}:${member.address.port.getOrElse(0)}") =>
+    case MemberExited(member)      if key.endsWith(clusterAddressKey(member)) =>
       etcd.deleteKey(key)
-      context.stop(self)
 
-    case MemberUp(member) if key.endsWith(s"/${member.address.host.getOrElse("")}:${member.address.port.getOrElse(0)}") =>
+    case MemberUp(member)          if key.endsWith(clusterAddressKey(member)) =>
       etcd.setKey(key, member.status.toString)
+
+    case _ =>
+      // Intentionally ignoring all other messages!
   }
 
 }

@@ -17,17 +17,21 @@ abstract class BootableCluster(val system: ActorSystem) extends Bootable with Co
   val hostname = InetAddress.getLocalHost.getHostName
   val cluster = Cluster(system)
   val log = Logger(this.getClass)
-  val clusterNodes = config.getString("etcd.akka")
+  val nodeKey = config.getString("akka.etcd.key")
   val retry = config.getDuration("akka.cluster.retry", TimeUnit.SECONDS).seconds
 
   import system.dispatcher
 
   // Register cluster MemberUp callback
   cluster.registerOnMemberUp {
-    etcd.setKey(s"$clusterNodes/${clusterAddressKey()}", MemberStatus.Up.toString)
-    // Subscribe to cluster membership events and maintain etcd key state
-    val monitor = system.actorOf(Props(new ClusterMonitor(s"$clusterNodes/${clusterAddressKey()}")))
-    cluster.subscribe(monitor, classOf[UnreachableMember], classOf[MemberRemoved], classOf[MemberExited], classOf[MemberUp])
+    log.debug("MemberUp callback triggered - recording Up status in etcd registry")
+    etcd.setKey(s"$nodeKey/${clusterAddressKey()}", MemberStatus.Up.toString).onSuccess {
+      case _ =>
+        // Subscribe to cluster membership events and maintain etcd key state
+        log.info(s"${clusterAddressKey()} marked as up - registering for cluster membership changes")
+        val monitor = system.actorOf(Props(new ClusterMonitor(etcd, s"$nodeKey/${clusterAddressKey()}")))
+        cluster.subscribe(monitor, classOf[UnreachableMember], classOf[MemberRemoved], classOf[MemberExited], classOf[MemberUp])
+    }
   }
   // Register shutdown callback
   system.registerOnTermination(shutdown())
@@ -37,7 +41,7 @@ abstract class BootableCluster(val system: ActorSystem) extends Bootable with Co
   }
 
   def clusterAddress(key: String): Address = {
-    AddressFromURIString(s"akka.tcp://${config.getString("akka.system")}@$key")
+    AddressFromURIString(s"akka.tcp://${system.name}@$key")
   }
 
   /**
@@ -45,11 +49,11 @@ abstract class BootableCluster(val system: ActorSystem) extends Bootable with Co
    */
   def joinCluster(): Unit = {
     // We are not an initial seed node, so we need to fetch up cluster nodes for seeding
-    etcd.listDir(clusterNodes, recursive = false).onComplete {
+    etcd.listDir(nodeKey, recursive = false).onComplete {
       case Success(response: EtcdListResponse) =>
         log.debug(s"Using etcd response: $response")
         response.node.nodes match {
-          // We are only interested in actor systems which have registered and recorded themselves as up
+          // Are any cluster nodes marked as up?
           case Some(systemNodes)
             if systemNodes.filter(_.value == Some(MemberStatus.Up.toString)).nonEmpty => {
 
@@ -57,7 +61,7 @@ abstract class BootableCluster(val system: ActorSystem) extends Bootable with Co
             val seedNodes =
               systemNodes
                 .filter(_.value == Some(MemberStatus.Up.toString))
-                .map(n => clusterAddress(n.key.stripPrefix(s"/$clusterNodes/")))
+                .map(n => clusterAddress(n.key.stripPrefix(s"/$nodeKey/")))
 
             log.info(s"Joining the cluster using the seed nodes: $seedNodes")
             cluster.joinSeedNodes(seedNodes)
@@ -68,7 +72,7 @@ abstract class BootableCluster(val system: ActorSystem) extends Bootable with Co
             system.scheduler.scheduleOnce(retry)(joinCluster())
 
           case None =>
-            log.error(s"Failed to retrieve any keys for directory $clusterNodes - retrying in $retry seconds")
+            log.error(s"Failed to retrieve any keys for directory $nodeKey - retrying in $retry seconds")
             system.scheduler.scheduleOnce(retry)(joinCluster())
         }
 
@@ -80,7 +84,7 @@ abstract class BootableCluster(val system: ActorSystem) extends Bootable with Co
 
   def startup(): Unit = {
     // We first setup basic cluster registration information
-    etcd.setKey(s"$clusterNodes/${clusterAddressKey()}", MemberStatus.Joining.toString).onComplete {
+    etcd.setKey(s"$nodeKey/${clusterAddressKey()}", MemberStatus.Joining.toString).onComplete {
       case Success(_) =>
         // Now we retrieve seed nodes and join the collective
         joinCluster()
@@ -93,7 +97,7 @@ abstract class BootableCluster(val system: ActorSystem) extends Bootable with Co
 
   def shutdown(): Unit = {
     // First ensure that we de-register our etcd key and then we leave the cluster!
-    etcd.deleteKey(s"$clusterNodes/${clusterAddressKey()}").onComplete {
+    etcd.deleteKey(s"$nodeKey/${clusterAddressKey()}").onComplete {
       case _ =>
         cluster.leave(cluster.selfAddress)
         system.shutdown()

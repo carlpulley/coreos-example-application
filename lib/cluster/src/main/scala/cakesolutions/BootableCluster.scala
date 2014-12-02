@@ -25,12 +25,16 @@ abstract class BootableCluster(val system: ActorSystem) extends Bootable with Co
   // Register cluster MemberUp callback
   cluster.registerOnMemberUp {
     log.debug("MemberUp callback triggered - recording Up status in etcd registry")
-    etcd.setKey(s"$nodeKey/${clusterAddressKey()}", MemberStatus.Up.toString).onSuccess {
-      case _ =>
+    etcd.setKey(s"$nodeKey/${clusterAddressKey()}", MemberStatus.Up.toString).onComplete {
+      case Success(_) =>
         // Subscribe to cluster membership events and maintain etcd key state
         log.info(s"${clusterAddressKey()} marked as up - registering for cluster membership changes")
         val monitor = system.actorOf(Props(new ClusterMonitor(etcd, s"$nodeKey/${clusterAddressKey()}")))
         cluster.subscribe(monitor, classOf[UnreachableMember], classOf[MemberRemoved], classOf[MemberExited], classOf[MemberUp])
+
+      case Failure(exn) =>
+        log.error(s"Failed to set state to '${MemberStatus.Up.toString}' with etcd: ${exceptionString(exn)} - shutting down!")
+        shutdown()
     }
   }
   // Register shutdown callback
@@ -53,7 +57,7 @@ abstract class BootableCluster(val system: ActorSystem) extends Bootable with Co
       case Success(response: EtcdListResponse) =>
         log.debug(s"Using etcd response: $response")
         response.node.nodes match {
-          // Are any cluster nodes marked as up?
+          // Have any actor systems registered and recorded themselves as up?
           case Some(systemNodes)
             if systemNodes.filter(_.value == Some(MemberStatus.Up.toString)).nonEmpty => {
 
@@ -77,7 +81,7 @@ abstract class BootableCluster(val system: ActorSystem) extends Bootable with Co
         }
 
       case Failure(exn) =>
-        log.error(s"Failed to contact etcd: ${exceptionString(exn)}")
+        log.error(s"Failed to contact etcd: ${exceptionString(exn)} - shutting down!")
         shutdown()
     }
   }
@@ -90,7 +94,7 @@ abstract class BootableCluster(val system: ActorSystem) extends Bootable with Co
         joinCluster()
 
       case Failure(exn) =>
-        log.error(s"Failed to set state to '${MemberStatus.Joining}' with etcd: $exn")
+        log.error(s"Failed to set state to '${MemberStatus.Joining}' with etcd: $exn - shutting down!")
         shutdown()
     }
   }

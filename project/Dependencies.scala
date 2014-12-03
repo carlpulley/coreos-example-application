@@ -8,14 +8,15 @@ object Dependencies {
   object akka {
     val version = "2.3.7"
 
-    val actor       = "com.typesafe.akka"  %% "akka-actor"   % version
-    val cluster     = "com.typesafe.akka"  %% "akka-cluster" % version
-    val contrib     = "com.typesafe.akka"  %% "akka-contrib" % version
-    val kernel      = "com.typesafe.akka"  %% "akka-kernel"  % version
-    val persistence = "com.typesafe.akka"  %% "akka-persistence-experimental" % version
-    val remote      = "com.typesafe.akka"  %% "akka-remote"  % version
-    val slf4j       = "com.typesafe.akka"  %% "akka-slf4j"   % version
-    val testkit     = "com.typesafe.akka"  %% "akka-testkit" % version
+    val actor                 = "com.typesafe.akka"   %% "akka-actor"                    % version
+    val cluster               = "com.typesafe.akka"   %% "akka-cluster"                  % version
+    val contrib               = "com.typesafe.akka"   %% "akka-contrib"                  % version
+    val kernel                = "com.typesafe.akka"   %% "akka-kernel"                   % version
+    val persistence           = "com.typesafe.akka"   %% "akka-persistence-experimental" % version
+    val persistence_cassandra = "com.github.krasserm" %% "akka-persistence-cassandra"    % "0.4-SNAPSHOT"
+    val remote                = "com.typesafe.akka"   %% "akka-remote"                   % version
+    val slf4j                 = "com.typesafe.akka"   %% "akka-slf4j"                    % version
+    val testkit               = "com.typesafe.akka"   %% "akka-testkit"                  % version
   }
 
   object spray {

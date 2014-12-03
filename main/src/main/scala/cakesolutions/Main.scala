@@ -5,7 +5,7 @@ import akka.io.IO
 import cakesolutions.api.RootService
 import spray.can.Http
 
-class Main extends BootableCluster(ActorSystem("HelloWorld")) with Configuration {
+class Main extends BootableCluster(ActorSystem("HelloWorld")) with JoinConstraint with Configuration {
 
   override def startup(): Unit = {
     super.startup()

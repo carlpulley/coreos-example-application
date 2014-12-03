@@ -13,6 +13,7 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 abstract class BootableCluster(val system: ActorSystem) extends Bootable with Configuration with ExceptionLogging {
+  this: JoinConstraint =>
 
   val hostname = InetAddress.getLocalHost.getHostName
   val cluster = Cluster(system)
@@ -56,6 +57,7 @@ abstract class BootableCluster(val system: ActorSystem) extends Bootable with Co
     etcd.listDir(nodeKey, recursive = false).onComplete {
       case Success(response: EtcdListResponse) =>
         log.debug(s"Using etcd response: $response")
+
         response.node.nodes match {
           // Have any actor systems registered and recorded themselves as up?
           case Some(systemNodes)
@@ -66,17 +68,23 @@ abstract class BootableCluster(val system: ActorSystem) extends Bootable with Co
               systemNodes
                 .filter(_.value == Some(MemberStatus.Up.toString))
                 .map(n => clusterAddress(n.key.stripPrefix(s"/$nodeKey/")))
+            // Any node that is 'Up' or 'Joining' is considered to be a joining node
+            val joiningNodes =
+              systemNodes
+                .filter(n => List(Some(MemberStatus.Up.toString), Some(MemberStatus.Joining.toString)).contains(n.value))
 
-            log.info(s"Joining the cluster using the seed nodes: $seedNodes")
-            cluster.joinSeedNodes(seedNodes)
+            joinConstraint(joiningNodes) {
+              log.info(s"Building the cluster using the seed nodes: $seedNodes")
+              cluster.joinSeedNodes(seedNodes)
+            }
           }
 
           case Some(_) =>
-            log.error(s"Failed to retrieve any system addresses - retrying in $retry seconds")
+            log.warning(s"Failed to retrieve any system addresses - retrying in $retry seconds")
             system.scheduler.scheduleOnce(retry)(joinCluster())
 
           case None =>
-            log.error(s"Failed to retrieve any keys for directory $nodeKey - retrying in $retry seconds")
+            log.warning(s"Failed to retrieve any keys for directory $nodeKey - retrying in $retry seconds")
             system.scheduler.scheduleOnce(retry)(joinCluster())
         }
 

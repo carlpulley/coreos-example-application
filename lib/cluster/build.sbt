@@ -21,5 +21,6 @@ libraryDependencies ++= Seq(
   scalatest     % "test",
   scalacheck    % "test",
   specs2        % "test",
-  akka.testkit  % "test"
+  akka.testkit  % "test",
+  akka.multi_node_testkit % "test"
 )

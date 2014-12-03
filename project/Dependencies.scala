@@ -17,6 +17,7 @@ object Dependencies {
     val remote                = "com.typesafe.akka"   %% "akka-remote"                   % version
     val slf4j                 = "com.typesafe.akka"   %% "akka-slf4j"                    % version
     val testkit               = "com.typesafe.akka"   %% "akka-testkit"                  % version
+    val multi_node_testkit    = "com.typesafe.akka"   %% "akka-multi-node-testkit"       % version
   }
 
   object spray {

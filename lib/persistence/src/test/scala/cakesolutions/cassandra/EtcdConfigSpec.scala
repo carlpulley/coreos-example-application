@@ -12,6 +12,7 @@ import org.scalatest._
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
 import scala.concurrent.Future
+import scala.language.reflectiveCalls
 
 class EtcdConfigSpec(_system: ActorSystem) extends TestKit(_system) with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
 

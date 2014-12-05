@@ -2,7 +2,7 @@ package cakesolutions
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.ActorSystem
+import akka.actor.Address
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.MemberUp
 import akka.remote.testconductor.RoleName
@@ -13,6 +13,7 @@ import net.nikore.etcd.EtcdJsonProtocol.{NodeResponse, EtcdResponse, NodeListEle
 import org.scalatest._
 import scala.concurrent.duration._
 import scala.concurrent.Future
+import scala.language.reflectiveCalls
 
 object BootableClusterSpecConfig extends MultiNodeConfig {
   val nodes = Map(
@@ -71,7 +72,11 @@ class BootableClusterSpec extends MultiNodeSpec(BootableClusterSpecConfig) with 
   }
 
   def addressKey(role: RoleName): String = {
-    s"${node(role).address.host.getOrElse("")}:${node(role).address.port.getOrElse(0)}"
+    addressKey(node(role).address)
+  }
+
+  def addressKey(addr: Address): String = {
+    s"${addr.host.getOrElse("")}:${addr.port.getOrElse(0)}"
   }
 
   val joinProbe = TestProbe()
@@ -89,7 +94,7 @@ class BootableClusterSpec extends MultiNodeSpec(BootableClusterSpecConfig) with 
     }
 
     override def clusterAddressKey(): String = {
-      s"${node(nodeRole).address.host.getOrElse("")}:${node(nodeRole).address.port.getOrElse(0)}"
+      addressKey(nodeRole)
     }
   }
 
@@ -127,8 +132,7 @@ class BootableClusterSpec extends MultiNodeSpec(BootableClusterSpecConfig) with 
     "wait until at least one node is marked as 'Up'" in {
       mockEtcdClient.etcdKVStore = mockEtcdClient.etcdKVStore + (s"$etcdKey/${addressKey(node1.nodeRole)}" -> "Up")
       within(2 * retry) {
-        // FIXME: need to map NodeListElement here
-        joinProbe.expectMsgType[Seq[NodeListElement]].flatMap(_.value) shouldEqual Seq(node(node1.nodeRole).address)
+        joinProbe.expectMsgType[Seq[NodeListElement]].flatMap(_.value) shouldEqual Seq(addressKey(node1.nodeRole))
         val msgs = clusterProbe.receiveN(1)
         msgs.map(_.asInstanceOf[MemberUp].member.address).toSet shouldEqual Set(node(node1.nodeRole).address)
       }
@@ -163,9 +167,8 @@ class BootableClusterSpec extends MultiNodeSpec(BootableClusterSpecConfig) with 
     "wait until at least one node is 'Up'" in {
       mockEtcdClient.etcdKVStore = mockEtcdClient.etcdKVStore + (s"$etcdKey/${addressKey(node3.nodeRole)}" -> "Up")
       within(2 * retry) {
-        // FIXME: need to map NodeListElement here
-        joinProbe.expectMsgType[Seq[NodeListElement]] shouldEqual Seq(node(node3.nodeRole).address)
-        joinProbe.expectMsgType[Seq[NodeListElement]] shouldEqual Seq(node(node3.nodeRole).address)
+        joinProbe.expectMsgType[Seq[NodeListElement]].flatMap(_.value) shouldEqual Seq(addressKey(node3.nodeRole))
+        joinProbe.expectMsgType[Seq[NodeListElement]].flatMap(_.value) shouldEqual Seq(addressKey(node3.nodeRole))
         val msgs = clusterProbe.receiveN(2)
         msgs.map(_.asInstanceOf[MemberUp].member.address).toSet shouldEqual Set(node(node2.nodeRole).address, node(node3.nodeRole).address)
       }

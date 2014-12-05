@@ -39,7 +39,7 @@ class EtcdConfig(props: Config => Props, key: String) extends LoggingActor {
           val contactPoints = nodes.flatMap(_.value)
           log.info(s"Cassandra contact points taken to be $contactPoints")
           // Define Cassandra storage actor using new contact points - we override any such application.conf definition here
-          val updatedConfig = ConfigFactory.parseString(s"contact-points=[${contactPoints.mkString("\"", "\", \"", "\"")}}]").withFallback(config.getConfig(key))
+          val updatedConfig = ConfigFactory.parseString(contactPoints.mkString("contact-points=[ \"", "\", \"", "\" ]")).withFallback(config.getConfig(key))
           store = Some(context.actorOf(props(updatedConfig)))
           // Change actor behaviour to enable message forwarding to the Cassandra storage plugin
           context.become(forward)

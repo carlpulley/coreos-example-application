@@ -3,39 +3,34 @@ package cakesolutions
 package cassandra
 
 import akka.actor.{Actor, Props, ActorSystem}
-import akka.testkit.{TestActorRef, TestProbe, TestKit, ImplicitSender}
+import akka.testkit.{TestProbe, TestKit, ImplicitSender}
 import cakesolutions.etcd.WithEtcd
-import com.typesafe.config.{ConfigFactory, Config}
-import net.nikore.etcd.EtcdJsonProtocol.{Error, NodeListElement, EtcdListResponse}
+import com.typesafe.config.Config
+import java.util.concurrent.TimeUnit
+import net.nikore.etcd.EtcdJsonProtocol.{NodeListElement, EtcdListResponse}
 import org.scalatest._
+import scala.collection.JavaConversions._
 import scala.concurrent.duration._
 import scala.concurrent.Future
 
-class EtcdConfigSpec extends TestKit(ActorSystem("TestSystem", ConfigFactory.parseString(
-  """
-    |cassandra.etcd.key = "cassandra"
-    |cassandra.etcd.retry = 3 s
-    |dummy.config = {
-    | name = "Dummy Config"
-    |}
-  """.stripMargin))) with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
+class EtcdConfigSpec(_system: ActorSystem) extends TestKit(_system) with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
 
-  import system.dispatcher
+  def this() = this(ActorSystem("TestSystem"))
 
+  val retry = system.settings.config.getDuration("cassandra.etcd.retry", TimeUnit.SECONDS).seconds
   val etcdProbe = TestProbe()
   val mockEtcdClient = new etcd.Client("mock") {
-    var count = 0
+    var lookupFailure: Boolean = true
 
     override def listDir(dir: String, recursive: Boolean = false): Future[EtcdListResponse] = {
       etcdProbe.ref ! dir
-      if (count < 3) {
-        count += 1
-        Future {
-          Error(42, "Key not found", "Key not found", 2)
+      if (lookupFailure) {
+        Future.successful {
+          EtcdListResponse("ls", NodeListElement("/cassandra", None, None, None))
         }
       } else {
-        Future {
-          val nodes = List().map(addr => NodeListElement(s"/cassandra/$addr", None, Some(addr), None))
+        Future.successful {
+          val nodes = List("node1", "node2", "node3").map(addr => NodeListElement(s"/cassandra/$addr", None, Some(addr), None))
           EtcdListResponse("ls", NodeListElement("/cassandra", None, None, Some(nodes)))
         }
       }
@@ -51,25 +46,43 @@ class EtcdConfigSpec extends TestKit(ActorSystem("TestSystem", ConfigFactory.par
     }
   }
   val mockProps = (config: Config) => {
+    println(s"props(config) = $config")
     configProbe.ref ! config
 
     Props(new MockStore)
   }
-  val testEtcdConfig = TestActorRef(new EtcdConfig(mockProps, "dummy.config") with Configuration with WithEtcd {
-    override val etcd = mockEtcdClient
-  })
+  val testEtcdConfig = system.actorOf(Props(new EtcdConfig(mockProps, "dummy.config") with Configuration with WithEtcd {
+    override lazy val config = system.settings.config
+    override lazy val etcd = mockEtcdClient
+  }), "etcd-config")
 
-  "" should {
-    "" in {
-      val period = 3*5
-      etcdProbe.expectMsgType[String] must be("/cassandra")
-      configProbe.expectNoMsg(period.seconds)
-      storeProbe.expectNoMsg(period.seconds)
-      within(period.seconds) {
-        etcdProbe.expectMsgType[String] must be("/cassandra")
-        configProbe.expectMsgType[Config]
+  "EtcdConfig" should {
+    val period = 2 * retry // 2 attempts at 3 second retry intervals
+
+    "only probe etcd for /cassandra key" in {
+      mockEtcdClient.lookupFailure = true // Ensure etcd key lookups fail
+      etcdProbe.expectMsgType[String] shouldEqual "/cassandra"
+      configProbe.expectNoMsg(period)
+      storeProbe.expectNoMsg(period)
+    }
+
+    "fail to route traffic to persistent store" in {
+      testEtcdConfig ! "persistence message"
+      storeProbe.expectNoMsg(period)
+    }
+
+    "discover value for /cassandra key from etcd" in {
+      mockEtcdClient.lookupFailure = false // Simulate an etcd key update
+      within(period) {
+        etcdProbe.expectMsgType[String] shouldEqual "/cassandra"
+        val result = configProbe.expectMsgType[Config]
+        result.getStringList("contact-points").toSet shouldEqual Set("node1", "node2", "node3")
       }
-      testEtcdConfig ! ???
+    }
+
+    "route traffic to persistent store" in {
+      testEtcdConfig ! "persistence message"
+      storeProbe.expectMsgType[String] shouldEqual "persistence message"
     }
   }
 

@@ -4,7 +4,7 @@ import akka.actor._
 import akka.cluster.ClusterEvent._
 import akka.cluster.{Cluster, MemberStatus}
 import akka.kernel.Bootable
-import cakesolutions.etcd.ClusterMonitor
+import cakesolutions.etcd.{WithEtcd, ClusterMonitor}
 import cakesolutions.logging.Logger
 import java.net.InetAddress
 import java.util.concurrent.TimeUnit
@@ -12,8 +12,8 @@ import net.nikore.etcd.EtcdJsonProtocol.EtcdListResponse
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
-abstract class BootableCluster(val system: ActorSystem) extends Bootable with Configuration with ExceptionLogging {
-  this: JoinConstraint =>
+abstract class BootableCluster(val system: ActorSystem) extends Bootable with ExceptionLogging {
+  this: JoinConstraint with Configuration with WithEtcd =>
 
   val hostname = InetAddress.getLocalHost.getHostName
   val cluster = Cluster(system)

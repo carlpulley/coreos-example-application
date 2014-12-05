@@ -1,18 +1,20 @@
-package cakesolutions.cassandra
+package cakesolutions
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+package cassandra
+
+import akka.actor.{Actor, ActorRef, Props}
+import cakesolutions.etcd.WithEtcd
+import cakesolutions.logging.{Logging => LoggingActor}
 import com.typesafe.config.{Config, ConfigFactory}
 import java.util.concurrent.TimeUnit
-import net.nikore.etcd.EtcdClient
 import net.nikore.etcd.EtcdJsonProtocol.{EtcdListResponse, NodeListElement}
 import scala.concurrent.duration._
 
-class EtcdConfig(props: Config => Props, key: String) extends Actor with ActorLogging {
+class EtcdConfig(props: Config => Props, key: String) extends LoggingActor {
+  this: Configuration with WithEtcd =>
 
   import context.dispatcher
 
-  val config = context.system.settings.config
-  val etcd = new EtcdClient(config.getString("etcd.url"))
   val cassandraKey = config.getString("cassandra.etcd.key")
   val retry = config.getDuration("cassandra.etcd.retry", TimeUnit.SECONDS).seconds
   var store: Option[ActorRef] = None

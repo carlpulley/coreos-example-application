@@ -1,6 +1,7 @@
 package cakesolutions
 
 import cakesolutions.logging.Logger
+import scala.language.reflectiveCalls
 
 object StandaloneExample extends App with ExceptionLogging {
 

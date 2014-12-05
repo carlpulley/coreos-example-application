@@ -2,13 +2,14 @@ import Dependencies._
 
 Project.settings
 
-name := "persistence"
+name := "etcd"
 
 libraryDependencies ++= Seq(
   // Core Akka
   akka.actor,
+  akka.cluster,
   akka.contrib,
-  akka.persistence_cassandra,
+  akka.kernel,
   akka.remote,
   akka.slf4j,
   // Miscellaneous
@@ -18,5 +19,8 @@ libraryDependencies ++= Seq(
   typesafe,
   // Testing
   scalatest     % "test",
-  akka.testkit  % "test"
+  scalacheck    % "test",
+  specs2        % "test",
+  akka.testkit  % "test",
+  akka.multi_node_testkit % "test"
 )

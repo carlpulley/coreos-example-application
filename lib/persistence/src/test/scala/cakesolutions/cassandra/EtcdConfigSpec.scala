@@ -18,6 +18,7 @@ class EtcdConfigSpec(_system: ActorSystem) extends TestKit(_system) with WordSpe
   def this() = this(ActorSystem("TestSystem"))
 
   val retry = system.settings.config.getDuration("cassandra.etcd.retry", TimeUnit.SECONDS).seconds
+  val etcdKey = system.settings.config.getString("cassandra.etcd.key")
   val etcdProbe = TestProbe()
   val mockEtcdClient = new etcd.Client("mock") {
     var lookupFailure: Boolean = true
@@ -26,15 +27,27 @@ class EtcdConfigSpec(_system: ActorSystem) extends TestKit(_system) with WordSpe
       etcdProbe.ref ! dir
       if (lookupFailure) {
         Future.successful {
-          EtcdListResponse("ls", NodeListElement("/cassandra", None, None, None))
+          EtcdListResponse("ls", NodeListElement(s"/$etcdKey", None, None, None))
         }
       } else {
         Future.successful {
-          val nodes = List("node1", "node2", "node3").map(addr => NodeListElement(s"/cassandra/$addr", None, Some(addr), None))
-          EtcdListResponse("ls", NodeListElement("/cassandra", None, None, Some(nodes)))
+          val nodes = List("node1", "node2", "node3").map(addr => NodeListElement(s"/$etcdKey/$addr", None, Some(addr), None))
+          EtcdListResponse("ls", NodeListElement(s"/$etcdKey", None, None, Some(nodes)))
         }
       }
     }
+
+    override def getKey(key: String) = ???
+
+    override def getKeyAndWait(key: String, wait: Boolean = true) = ???
+
+    override def setKey(key: String, value: String, ttl: Option[Duration] = None) = ???
+
+    override def deleteKey(key: String) = ???
+
+    override def createDir(dir: String, ttl: Option[Duration] = None) = ???
+
+    override def deleteDir(dir: String, recursive: Boolean = false) = ???
   }
 
   val configProbe = TestProbe()
@@ -59,9 +72,9 @@ class EtcdConfigSpec(_system: ActorSystem) extends TestKit(_system) with WordSpe
   "EtcdConfig" should {
     val period = 2 * retry // 2 attempts at 3 second retry intervals
 
-    "only probe etcd for /cassandra key" in {
+    s"only probe etcd for /$etcdKey key" in {
       mockEtcdClient.lookupFailure = true // Ensure etcd key lookups fail
-      etcdProbe.expectMsgType[String] shouldEqual "/cassandra"
+      etcdProbe.expectMsgType[String] shouldEqual s"/$etcdKey"
       configProbe.expectNoMsg(period)
       storeProbe.expectNoMsg(period)
     }
@@ -71,10 +84,10 @@ class EtcdConfigSpec(_system: ActorSystem) extends TestKit(_system) with WordSpe
       storeProbe.expectNoMsg(period)
     }
 
-    "discover value for /cassandra key from etcd" in {
+    s"discover value for /$etcdKey key from etcd" in {
       mockEtcdClient.lookupFailure = false // Simulate an etcd key update
       within(period) {
-        etcdProbe.expectMsgType[String] shouldEqual "/cassandra"
+        etcdProbe.expectMsgType[String] shouldEqual s"/$etcdKey"
         val result = configProbe.expectMsgType[Config]
         result.getStringList("contact-points").toSet shouldEqual Set("node1", "node2", "node3")
       }

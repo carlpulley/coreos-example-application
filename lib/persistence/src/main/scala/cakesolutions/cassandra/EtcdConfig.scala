@@ -9,6 +9,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import java.util.concurrent.TimeUnit
 import net.nikore.etcd.EtcdJsonProtocol.{EtcdListResponse, NodeListElement}
 import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 
 class EtcdConfig(props: Config => Props, key: String) extends LoggingActor {
   this: Configuration with WithEtcd =>
@@ -34,8 +35,8 @@ class EtcdConfig(props: Config => Props, key: String) extends LoggingActor {
    */
   def getContactPoints(): Unit = {
     context.system.scheduler.scheduleOnce(retry) {
-      etcd.listDir(s"/$cassandraKey", recursive = false).map {
-        case EtcdListResponse(_, NodeListElement(_, _, _, Some(nodes))) if nodes.flatMap(_.value).nonEmpty =>
+      etcd.listDir(s"/$cassandraKey", recursive = false).onComplete {
+        case Success(EtcdListResponse(_, NodeListElement(_, _, _, Some(nodes)))) if nodes.flatMap(_.value).nonEmpty =>
           val contactPoints = nodes.flatMap(_.value)
           log.info(s"Cassandra contact points taken to be $contactPoints")
           // Define Cassandra storage actor using new contact points - we override any such application.conf definition here
@@ -44,8 +45,12 @@ class EtcdConfig(props: Config => Props, key: String) extends LoggingActor {
           // Change actor behaviour to enable message forwarding to the Cassandra storage plugin
           context.become(forward)
 
+        case Failure(exn) =>
+          log.error(s"Failed to contact etcd: ${exceptionString(exn)} - shutting down!")
+          context.system.shutdown()
+
         case _ =>
-          log.error(s"Failed to retrieve any Cassandra contact points from /$cassandraKey - retrying in $retry seconds")
+          log.warning(s"Failed to retrieve any Cassandra contact points from /$cassandraKey - retrying in $retry seconds")
           getContactPoints()
       }
     }

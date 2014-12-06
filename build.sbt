@@ -1,3 +1,4 @@
+import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys._
 import sbt._
 import Keys._
 
@@ -9,7 +10,7 @@ lazy val logging = project.in(file("lib/logging")).dependsOn(common)
 
 lazy val etcd = project.in(file("lib/etcd")).dependsOn(common)
 
-lazy val cluster = project.in(file("lib/cluster")).dependsOn(etcd, logging, common)
+lazy val cluster = project.in(file("lib/cluster")).dependsOn(etcd, logging, common) configs (MultiJvm)
 
 lazy val persistence = project.in(file("lib/persistence")).dependsOn(etcd, logging, common)
 

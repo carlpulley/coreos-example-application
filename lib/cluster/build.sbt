@@ -1,6 +1,6 @@
 import Dependencies._
 
-Project.settings
+Project.clusterSettings
 
 name := "cluster"
 

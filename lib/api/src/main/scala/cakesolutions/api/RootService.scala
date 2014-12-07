@@ -1,21 +1,16 @@
-package cakesolutions
+package cakesolutions.api
 
-package api
-
-import akka.actor.ActorRef
 import cakesolutions.logging.{Logging => LoggingActor}
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
 import spray.can.Http
-import spray.http._
-import spray.http.StatusCodes._
 import spray.http.HttpHeaders.RawHeader
-import spray.httpx.marshalling.{ToResponseMarshallingContext, ToResponseMarshaller, Marshaller}
+import spray.http.StatusCodes._
+import spray.http._
+import spray.httpx.marshalling.{Marshaller, ToResponseMarshaller, ToResponseMarshallingContext}
 import spray.routing._
 
-class RootService(actorRef: ActorRef) extends LoggingActor with Service {
-
-  import context.dispatcher
+class RootService(route: Route) extends LoggingActor with Directives {
 
   implicit def fromObjectCross[T : Marshaller](origin: Option[String])(obj: T): ToResponseMarshaller[T] =
     new ToResponseMarshaller[T] {
@@ -41,7 +36,7 @@ class RootService(actorRef: ActorRef) extends LoggingActor with Service {
         HttpResponse(status = StatusCodes.OK, headers = allCrossOrigins)
       }
     } ~
-      applicationRoute(actorRef)
+      route
 
   implicit val handler = ExceptionHandler {
     case exn => ctx =>

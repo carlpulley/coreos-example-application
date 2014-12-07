@@ -3,6 +3,7 @@ package cakesolutions
 package cassandra
 
 import akka.actor.{Actor, ActorRef, Props}
+import akka.event.LoggingReceive
 import cakesolutions.etcd.WithEtcd
 import cakesolutions.logging.{Logging => LoggingActor}
 import com.typesafe.config.{Config, ConfigFactory}
@@ -22,10 +23,13 @@ class EtcdConfig(props: Config => Props, key: String) extends LoggingActor {
 
   // Until Cassandra contact points have been defined, all messages are ignored - i.e. dead lettered
   // FIXME: should we be stashing these messages???
-  def receive = Actor.emptyBehavior
+  def receive = LoggingReceive {
+    case msg =>
+      // Intentionally drop/ignore messages
+  }
 
   // Once Cassandra contact points have been defined, all messages get forwarded to the plugin actor
-  def forward: Receive = {
+  def forward: Receive = LoggingReceive {
     case msg if store.isDefined =>
       store.get.tell(msg, sender())
   }

@@ -1,18 +1,25 @@
 package cakesolutions
 
 import akka.actor.{ActorSystem, Props}
-import akka.io.IO
-import cakesolutions.api.RootService
+import cakesolutions.api.WithApi
 import cakesolutions.etcd.WithEtcd
-import spray.can.Http
+import scala.concurrent.ExecutionContext
+import spray.util.LoggingContext._
 
-class Main extends BootableCluster(ActorSystem("HelloWorld")) with JoinConstraint with Configuration with WithEtcd {
+class Main extends BootableCluster(ActorSystem("HelloWorld")) with JoinConstraint with Configuration with WithEtcd with WithApi {
 
-  override def startup(): Unit = {
-    super.startup()
-    val applicationActor = system.actorOf(Props[HelloWorld])
-    val rootService = system.actorOf(Props(new RootService(applicationActor)), "api")
-    IO(Http)(system).tell(Http.Bind(rootService, interface = config.getString("application.hostname"), port = config.getInt("application.port")), rootService)
+  def boot(system: ActorSystem): BootedNode = {
+    new BootedNode with api.Service {
+      val applicationActor = system.actorOf(Props[HelloWorld])
+
+      override def api = Some((ec: ExecutionContext) => applicationRoute(applicationActor)(fromAdapter(system.log), ec))
+    }
+  }
+
+  cluster.registerOnMemberUp {
+    // Boot the microservice when member is 'Up'
+    val bootedNode = boot(system)
+    bootedNode.api.foreach(startupApi)
   }
 
 }

@@ -44,4 +44,5 @@ trait Service extends Directives with Configuration with ExceptionLogging {
         }
     }
   }
+
 }

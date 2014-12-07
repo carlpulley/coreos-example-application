@@ -6,10 +6,10 @@ import net.nikore.etcd.EtcdJsonProtocol.{NodeResponse, EtcdResponse, NodeListEle
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 
-object BootableClusterSpecConfig extends Configuration {
+object BootableClusterSpecConfig {
   implicit val system = ActorSystem("TestSystem")
 
-  val etcdKey: String = config.getString("akka.etcd.key")
+  val etcdKey: String = system.settings.config.getString("akka.etcd.key")
 
   val etcdProbe = TestProbe()
   val mockEtcdClient = new etcd.Client("mock") {

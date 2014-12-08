@@ -11,9 +11,10 @@ import net.nikore.etcd.EtcdJsonProtocol.EtcdListResponse
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
-abstract class BootableCluster(val system: ActorSystem) extends Bootable with ExceptionLogging {
+abstract class BootableCluster(_system: ActorSystem) extends Bootable with ExceptionLogging {
   this: JoinConstraint with Configuration with WithEtcd =>
 
+  implicit val system = _system
   val cluster = Cluster(system)
   val log = Logger(this.getClass)
   val nodeKey = config.getString("akka.etcd.key")

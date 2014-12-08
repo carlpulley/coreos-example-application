@@ -24,7 +24,7 @@ trait BootedNode {
 }
 
 object BootedNode {
-  type RestApi = ExecutionContext ⇒ Route
+  type RestApi = ExecutionContext => Route
 
   case class Default(api1: RestApi, api2: RestApi) extends BootedNode with RouteConcatenation {
     override lazy val api = Some({ ec: ExecutionContext => api1(ec) ~ api2(ec) })

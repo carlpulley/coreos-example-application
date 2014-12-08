@@ -14,6 +14,7 @@ libraryDependencies ++= Seq(
   // Miscellaneous
   commons,
   etcd,
+  guava,
   logback,
   typesafe,
   // Testing

@@ -49,11 +49,12 @@ dockerfile in docker <<= (name, stagingDirectory in Universal) map {
       maintainer("Carl Pulley <carlp@cakesolutions.net>")
       // Expose port HTTP (80)
       expose(80)
-      //expose(12552)
-      //expose(12553)
-      //expose(12554)
+      // Expose a remote DEBUG port
+      expose(5005)
       // Add the libs dir
       add(stageDir, workingDir)
+      // DEBUG setup
+      env("JAVA_OPTS", "-Xmx2G -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005")
       run("chmod",  "+x",  s"$workingDir/bin/$appName")
       workDir(workingDir)
       entryPointShell(s"bin/$appName")

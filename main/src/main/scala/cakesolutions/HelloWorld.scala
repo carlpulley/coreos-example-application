@@ -6,19 +6,19 @@ import akka.event.LoggingReceive
 import akka.persistence.{SnapshotOffer, PersistentActor}
 import cakesolutions.logging.Logging
 import java.net.InetAddress
-import java.util.concurrent.TimeUnit
-import scala.concurrent.duration._
 
 object HelloWorld {
   case object Ping
   case class Pong(message: String)
+
+  val shardName = "hello-world"
 
   val idExtractor: ShardRegion.IdExtractor = {
     case Ping => ("HelloWorld", Ping)
   }
 
   val shardResolver: ShardRegion.ShardResolver = {
-    case Ping => "HelloWorld"
+    case Ping => "1"
   }
 
   val props = Props[HelloWorld]
@@ -29,7 +29,6 @@ class HelloWorld extends PersistentActor with Configuration with Logging with Au
   import HelloWorld._
 
   val persistenceId: String = s"${getClass()}-${self.path.name}"
-  val passivationTimeout = config.getDuration("application.passivate", TimeUnit.SECONDS).seconds
 
   def receiveRecover: Receive = LoggingReceive {
     case SnapshotOffer =>

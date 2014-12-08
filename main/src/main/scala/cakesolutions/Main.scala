@@ -1,6 +1,6 @@
 package cakesolutions
 
-import akka.actor.{ActorSystem, Props}
+import akka.actor.{ActorRef, ActorSystem}
 import akka.contrib.pattern.ClusterSharding
 import cakesolutions.api.WithApi
 import cakesolutions.etcd.WithEtcd
@@ -8,23 +8,21 @@ import scala.concurrent.ExecutionContext
 
 class Main extends BootableCluster(ActorSystem("HelloWorld")) with JoinConstraint with Configuration with WithEtcd with WithApi {
 
-  val bootedNode = new BootedNode with api.Service {
+  def boot(ref: ActorRef) = new BootedNode with api.Service {
     override def api = Some((ec: ExecutionContext) => {
-      //val applicationActor = system.actorOf(Props[HelloWorld])
-      val applicationActor = ClusterSharding(system).start(
-        typeName = "hello-world",
-        entryProps = Some(Props[HelloWorld]),
-        idExtractor = HelloWorld.idExtractor,
-        shardResolver = HelloWorld.shardResolver
-      )
-
-      applicationRoute(applicationActor)(ec)
+      applicationRoute(ref)(ec)
     })
   }
 
   cluster.registerOnMemberUp {
-    // Boot the microservice when member is 'Up'
-    bootedNode.api.foreach(startupApi)
+    // Register and boot the microservice when member is 'Up'
+    val applicationRef = ClusterSharding(system).start(
+      typeName = HelloWorld.shardName,
+      entryProps = Some(HelloWorld.props),
+      idExtractor = HelloWorld.idExtractor,
+      shardResolver = HelloWorld.shardResolver
+    )
+    boot(applicationRef).api.foreach(startupApi)
   }
 
 }

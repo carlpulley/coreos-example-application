@@ -49,8 +49,8 @@ class EtcdConfig(props: Config => Props, key: String) extends LoggingActor with 
           val updatedConfig = ConfigFactory.parseString(contactPoints.mkString("contact-points=[ \"", "\", \"", "\" ]")).withFallback(config.getConfig(key))
           store = Some(context.actorOf(props(updatedConfig)))
           // Change actor behaviour to enable message forwarding to the Cassandra storage plugin
-          unstashAll()
           context.become(forward)
+          unstashAll()
 
         case Failure(KeyNotFoundException("Key not found", "not found", _)) =>
           log.warning(s"etcd key '$cassandraKey' does not exist - retrying in $retry seconds")

@@ -10,7 +10,6 @@ libraryDependencies ++= Seq(
   akka.slf4j,
   // Miscellaneous
   commons,
-  etcd,
   logback,
   typesafe,
   // REST API

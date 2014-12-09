@@ -11,7 +11,7 @@ import org.scalatest._
 import scala.concurrent.duration._
 import scala.language.reflectiveCalls
 
-class TestBootableCluster(system: ActorSystem) extends BootableCluster(system) with JoinConstraint with Configuration with WithEtcd {
+class TestBootableCluster(system: ActorSystem) extends BootableCluster(system) with NoJoinConstraint with Configuration with WithEtcd {
   import BootableClusterSpecConfig._
 
   override lazy val etcd = mockEtcdClient

@@ -1,7 +1,8 @@
 package cakesolutions
 
 import scala.concurrent.ExecutionContext
-import spray.routing.{Route, RouteConcatenation}
+import spray.http.StatusCodes._
+import spray.routing.{Directives, Route, RouteConcatenation}
 
 trait BootedNode {
   import BootedNode._
@@ -21,6 +22,14 @@ trait BootedNode {
     case _ =>
       this
   }
+
+  def terminate: BootedNode = this.api match {
+    case Some(api) =>
+      Terminate(api)
+
+    case None =>
+      this
+  }
 }
 
 object BootedNode {
@@ -28,5 +37,14 @@ object BootedNode {
 
   case class Default(api1: RestApi, api2: RestApi) extends BootedNode with RouteConcatenation {
     override lazy val api = Some({ ec: ExecutionContext => api1(ec) ~ api2(ec) })
+  }
+
+  case class Terminate(api1: RestApi) extends BootedNode with Directives {
+    override lazy val api = Some({ ec: ExecutionContext =>
+      logRequestResponse("REST API") {
+        api1(ec) ~
+          complete(NotFound, "Requested resource was not found")
+      }
+    })
   }
 }

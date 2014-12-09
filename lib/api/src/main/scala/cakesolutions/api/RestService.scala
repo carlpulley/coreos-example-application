@@ -18,12 +18,6 @@ class RestService(route: Route) extends HttpServiceActor with Logging {
       complete(InternalServerError)
   }
 
-  val mainRoute: Route =
-    logRequestResponse("CoreOS Application API") {
-      route ~
-        complete(NotFound, "Requested resource was not found")
-    }
-
-  def receive = LoggingReceive { runRoute(mainRoute) }
+  def receive = LoggingReceive { runRoute(route) }
 
 }

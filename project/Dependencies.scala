@@ -31,7 +31,6 @@ object Dependencies {
 
   val commons       = "org.apache.commons" %  "commons-lang3"   % "3.3.2"
   val etcd          = "net.nikore.etcd"    %% "scala-etcd"      % "0.7"
-  val guava         = "com.google.guava"   %  "guava"           % "15.0" // FIXME: hack to fix Cassandra Java driver issue
   val logback       = "ch.qos.logback"     %  "logback-classic" % "1.1.2"
   val scalacheck    = "org.scalacheck"     %% "scalacheck"      % "1.11.6"
   val scalacompiler = "org.scala-lang"     % "scala-compiler"   % scala

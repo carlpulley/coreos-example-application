@@ -6,11 +6,11 @@ import cakesolutions.api.WithApi
 import cakesolutions.etcd.WithEtcd
 import scala.concurrent.ExecutionContext
 
-class Main extends BootableCluster(ActorSystem("HelloWorld")) with MinNumJoinConstraint with Configuration with WithEtcd with WithApi with api.Service {
+class Main extends BootableCluster(ActorSystem("HelloWorld")) with MinNumJoinConstraint with Configuration with WithEtcd with WithApi {
 
-  def boot = new BootedNode {
+  def boot = new BootedNode with api.Service {
     override def api = Some((ec: ExecutionContext) => {
-      // As shard regions may be subjected to rebalancing, we dynamically lookup the location of a shard region
+      // As shard regions may be subjected to re-balancing, we dynamically lookup the location of a shard region
       applicationRoute(ClusterSharding(system).shardRegion(HelloWorld.shardName))(ec)
     })
   }

@@ -1,6 +1,5 @@
 package cakesolutions.api
 
-import akka.event.LoggingReceive
 import cakesolutions.logging.Logging
 import spray.http.StatusCodes._
 import spray.routing._
@@ -18,6 +17,6 @@ class RestService(route: Route) extends HttpServiceActor with Logging {
       complete(InternalServerError)
   }
 
-  def receive = LoggingReceive { runRoute(route) }
+  def receive = runRoute(route)
 
 }

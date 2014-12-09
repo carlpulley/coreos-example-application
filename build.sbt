@@ -16,6 +16,8 @@ lazy val cluster = project.in(file("lib/cluster")).dependsOn(etcd, logging, comm
 
 lazy val persistence = project.in(file("lib/persistence")).dependsOn(etcd, logging, common)
 
+lazy val loadBalancer = project.in(file("load-balancer")).dependsOn(common, cluster, etcd, logging, api) configs (MultiJvm)
+
 lazy val main = project.in(file("main")).dependsOn(common, cluster, logging, api, persistence)
 
 lazy val root = project.in(file(".")).aggregate(main, common, api, etcd, logging, cluster, persistence)

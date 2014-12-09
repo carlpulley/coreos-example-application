@@ -3,17 +3,16 @@ import sbtdocker.ImageName
 import sbtdocker.Plugin.DockerKeys._
 import sbtdocker.mutable.Dockerfile
 
-Project.settings
+Project.clusterSettings
 
-name := "main"
+name := "load-balancer"
 
-mainClass in Compile := Some("cakesolutions.Main")
+mainClass in Compile := Some("cakesolutions.LoadBalancer")
 
 libraryDependencies ++= Seq(
   // Core Akka
   akka.actor,
   akka.cluster,
-  akka.contrib,
   akka.kernel,
   akka.remote,
   akka.slf4j,
@@ -27,10 +26,10 @@ libraryDependencies ++= Seq(
   logback,
   typesafe,
   // Testing
-  scalatest    % "test",
-  scalacheck   % "test",
-  specs2       % "test",
-  akka.testkit % "test"
+  scalatest     % "test",
+  scalacheck    % "test",
+  specs2        % "test",
+  akka.testkit  % "test"
 )
 
 enablePlugins(AkkaAppPackaging)
@@ -59,6 +58,6 @@ dockerfile in docker <<= (name, stagingDirectory in Universal) map {
 imageName in docker := {
   ImageName(
     namespace = Some("carlpulley"),
-    repository = "helloworld",
+    repository = "load-balancer",
     tag = Some("v" + version.value))
 }

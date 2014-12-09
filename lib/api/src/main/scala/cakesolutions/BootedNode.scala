@@ -46,5 +46,7 @@ object BootedNode {
           complete(NotFound, "Requested resource was not found")
       }
     })
+
+    override def +(that: BootedNode): BootedNode = this
   }
 }

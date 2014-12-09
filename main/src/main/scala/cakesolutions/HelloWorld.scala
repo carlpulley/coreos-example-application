@@ -5,7 +5,10 @@ import akka.contrib.pattern.ShardRegion
 import akka.event.LoggingReceive
 import akka.persistence.{SnapshotOffer, PersistentActor}
 import cakesolutions.logging.Logging
+import com.typesafe.config.ConfigFactory
 import java.net.InetAddress
+import scala.collection.JavaConversions._
+import scala.language.postfixOps
 
 object HelloWorld {
   case object Ping
@@ -18,10 +21,15 @@ object HelloWorld {
   }
 
   val shardResolver: ShardRegion.ShardResolver = {
-    case Ping => "1"
+    case Ping => "HelloWorld"
   }
 
   val props = Props[HelloWorld]
+
+  def shardProps: Option[Props] = {
+    val roles = ConfigFactory.load().getStringList("akka.cluster.roles")
+    roles.find(shardName ==).map(_ => props)
+  }
 }
 
 class HelloWorld extends PersistentActor with Configuration with Logging with AutoPassivation {

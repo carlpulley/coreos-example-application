@@ -7,11 +7,12 @@ import akka.kernel.Bootable
 import cakesolutions.etcd.{WithEtcd, ClusterMonitor}
 import cakesolutions.logging.Logger
 import java.util.concurrent.TimeUnit
-import net.nikore.etcd.EtcdJsonProtocol.EtcdListResponse
+import net.nikore.etcd.EtcdJsonProtocol.{EtcdResponse, EtcdListResponse}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
-abstract class BootableCluster(_system: ActorSystem) extends Bootable with ExceptionLogging {
+abstract class BootableCluster(_system: ActorSystem) extends Bootable with etcd.Registration with ExceptionLogging {
   this: JoinConstraint with Configuration with WithEtcd =>
 
   implicit val system = _system
@@ -25,14 +26,8 @@ abstract class BootableCluster(_system: ActorSystem) extends Bootable with Excep
   // Register cluster MemberUp callback
   cluster.registerOnMemberUp {
     log.debug("MemberUp callback triggered - recording Up status in etcd registry")
-    etcd.setKey(s"$nodeKey/${clusterAddressKey()}", MemberStatus.Up.toString).onComplete {
-      case Success(_) =>
-        // Subscribe to cluster membership events and maintain etcd key state
-        log.info(s"${clusterAddressKey()} marked as up - registering for cluster membership changes")
-        val monitor = system.actorOf(Props(new ClusterMonitor(etcd, s"$nodeKey/${clusterAddressKey()}")))
-        cluster.subscribe(monitor, classOf[UnreachableMember], classOf[MemberRemoved], classOf[MemberExited], classOf[MemberUp])
-
-      case Failure(exn) =>
+    register().onFailure {
+      case exn =>
         log.error(s"Failed to set state to '${MemberStatus.Up.toString}' with etcd: ${exceptionString(exn)} - shutting down!")
         shutdown()
     }
@@ -40,18 +35,32 @@ abstract class BootableCluster(_system: ActorSystem) extends Bootable with Excep
   // Register shutdown callback
   system.registerOnTermination(shutdown())
 
-  def clusterAddressKey(): String = {
+  private def clusterAddressKey(): String = {
     s"${cluster.selfAddress.host.getOrElse("")}:${cluster.selfAddress.port.getOrElse(0)}"
   }
 
-  def clusterAddress(key: String): Address = {
+  private def clusterAddress(key: String): Address = {
     AddressFromURIString(s"akka.tcp://${system.name}@$key")
+  }
+
+  protected def register()(implicit ec: ExecutionContext): Future[EtcdResponse] = {
+    etcd.setKey(s"$nodeKey/${clusterAddressKey()}", MemberStatus.Up.toString).andThen {
+      case Success(_) =>
+        // Subscribe to cluster membership events and maintain etcd key state
+        log.info(s"${clusterAddressKey()} marked as up - registering for cluster membership changes")
+        val monitor = system.actorOf(Props(new ClusterMonitor(etcd, s"$nodeKey/${clusterAddressKey()}")))
+        cluster.subscribe(monitor, classOf[UnreachableMember], classOf[MemberRemoved], classOf[MemberExited], classOf[MemberUp])
+    }
+  }
+
+  protected def unregister()(implicit ec: ExecutionContext): Future[EtcdResponse] = {
+    etcd.deleteKey(s"$nodeKey/${clusterAddressKey()}")
   }
 
   /**
    * Used to retrieve (from etcd) potential seed nodes for forming our Akka cluster and to then build our cluster.
    */
-  def joinCluster(): Unit = {
+  protected def joinCluster(): Unit = {
     // We are not an initial seed node, so we need to fetch up cluster nodes for seeding
     etcd.listDir(nodeKey, recursive = false).onComplete {
       case Success(response: EtcdListResponse) =>
@@ -94,7 +103,7 @@ abstract class BootableCluster(_system: ActorSystem) extends Bootable with Excep
   }
 
   def startup(): Unit = {
-    // We first setup basic cluster registration information
+    // We first setup initial cluster registration information
     etcd.setKey(s"$nodeKey/${clusterAddressKey()}", MemberStatus.Joining.toString).onComplete {
       case Success(_) =>
         // Now we retrieve seed nodes and join the collective
@@ -108,7 +117,7 @@ abstract class BootableCluster(_system: ActorSystem) extends Bootable with Excep
 
   def shutdown(): Unit = {
     // First ensure that we de-register our etcd key and then we leave the cluster!
-    etcd.deleteKey(s"$nodeKey/${clusterAddressKey()}").onComplete {
+    unregister().onComplete {
       case _ =>
         cluster.leave(cluster.selfAddress)
         system.shutdown()

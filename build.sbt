@@ -12,8 +12,6 @@ lazy val etcd = project.in(file("lib/etcd")).dependsOn(common)
 
 lazy val api = project.in(file("lib/api")).dependsOn(common, logging)
 
-lazy val loadBalancer = project.in(file("lib/load-balancer")).dependsOn(common, etcd, logging)
-
 lazy val cluster = project.in(file("lib/cluster")).dependsOn(common, etcd, logging) configs (MultiJvm)
 
 lazy val persistence = project.in(file("lib/persistence")).dependsOn(common, etcd, logging)

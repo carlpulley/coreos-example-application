@@ -15,6 +15,8 @@ libraryDependencies ++= Seq(
   akka.cluster,
   akka.contrib,
   akka.kernel,
+  akka.persistence,
+  akka.persistence_cassandra,
   akka.remote,
   akka.slf4j,
   // REST API

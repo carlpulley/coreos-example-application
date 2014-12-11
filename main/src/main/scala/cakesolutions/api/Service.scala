@@ -2,20 +2,24 @@ package cakesolutions
 
 package api
 
-import akka.actor.ActorRef
+import akka.actor.{ActorRef, Address}
 import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import spray.routing._
 
-trait Service extends Directives with Configuration with ExceptionLogging {
+trait Service extends Directives with Configuration {
 
   import HelloWorld._
 
   implicit val timeout: Timeout = Timeout(config.getDuration("application.timeout", SECONDS).seconds)
 
-  def applicationRoute(actorRef: ActorRef)(implicit ec: ExecutionContext) = {
+  def boot(handler: ActorRef, address: Address) = RestApi(
+    route = Some({ ec: ExecutionContext => applicationRoute(handler)(ec) })
+  )
+
+  private[api] def applicationRoute(actorRef: ActorRef)(implicit ec: ExecutionContext) = {
     path("ping") {
       get {
         complete {

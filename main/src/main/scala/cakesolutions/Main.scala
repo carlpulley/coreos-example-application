@@ -5,7 +5,7 @@ import akka.contrib.pattern.ClusterSharding
 import cakesolutions.api.WithApi
 import cakesolutions.etcd.WithEtcd
 
-class Main extends BootableCluster(ActorSystem("HelloWorld")) with api.Service with MinNumJoinConstraint with Configuration with WithEtcd with WithApi {
+class Main extends BootableCluster(ActorSystem("HelloWorld")) with api.BalancedService with MinNumJoinConstraint with Configuration with WithEtcd with WithApi {
 
   cluster.registerOnMemberUp {
     // Register and boot the microservice when member is 'Up'

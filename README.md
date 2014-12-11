@@ -13,7 +13,6 @@
     git clone https://github.com/carlpulley/coreos-vagrant.git
     cd coreos-vagrant
     curl https://discovery.etcd.io/new
-    # Edit `config.rb` with the UUID token obtained above
     INSTANCE=1,2 CLOUD_CONFIG=helloworld/akka METADATA="akka=true" vagrant up
     INSTANCE=3 CLOUD_CONFIG=helloworld/akka METADATA="akka=true,load-balancer=true" vagrant up
     INSTANCE=4 CLOUD_CONFIG=cassandra METADATA="cassandra=true" vagrant up

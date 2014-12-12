@@ -8,7 +8,7 @@ lazy val common = project.in(file("lib/common"))
 
 lazy val logging = project.in(file("lib/logging")).dependsOn(common)
 
-lazy val etcd = project.in(file("lib/etcd")).dependsOn(common)
+lazy val etcd = project.in(file("lib/etcd")).dependsOn(common, logging)
 
 lazy val api = project.in(file("lib/api")).dependsOn(common, logging)
 

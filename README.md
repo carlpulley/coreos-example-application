@@ -19,9 +19,9 @@
     # You should now have a 4 machine cluster provisioned
     ssh-add ~/.vagrant.d/insecure_private_key
     vagrant ssh core-01 -- -A
-    fleetctl start cassandra@1 app@{1..4} vulcand
+    fleetctl start app@{1..4} vulcand cassandra
     # Determine potential seed nodes
-    etcdctl ls /akka.cluster.nodes
+    etcdctl ls /helloworld/akka
     # Now form a cluster by specifying a **single** initial seed node
     fleetctl start seed@10.42.42.1:12345
     # You should now have:

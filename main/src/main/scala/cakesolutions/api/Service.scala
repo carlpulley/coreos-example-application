@@ -20,10 +20,10 @@ trait Service extends Directives with Configuration {
   )
 
   private[api] def applicationRoute(actorRef: ActorRef)(implicit ec: ExecutionContext) = {
-    path("ping") {
+    path("ping" / IntNumber) { index =>
       get {
         complete {
-          (actorRef ? Ping).mapTo[Pong].map(_.message)
+          (actorRef ? Ping(index)).mapTo[Pong].map(_.message)
         }
       }
     }

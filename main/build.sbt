@@ -48,8 +48,8 @@ dockerfile in docker <<= (name, stagingDirectory in Universal) map {
       // Use a base image that contain Java
       from("dockerfile/java")
       maintainer("Carl Pulley <carlp@cakesolutions.net>")
-      // Expose port HTTP (80)
-      expose(80)
+      // Expose REST API on port 8080
+      expose(8080)
       // Add the libs dir
       add(stageDir, workingDir)
       run("chmod",  "+x",  s"$workingDir/bin/$appName")

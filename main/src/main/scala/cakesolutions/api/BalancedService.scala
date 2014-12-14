@@ -23,14 +23,14 @@ trait BalancedService extends Service with WithLoadBalancer {
   private[api] def start(address: Address): Unit = {
     log.debug(s"Starting REST routes using address $address")
 
-    balancer + (MicroService("hello-world") -> Location("/ping", pingUpstream))
-    balancer ++ (pingUpstream -> Endpoint(s"http://${address.host.getOrElse("")}:${address.port.getOrElse(0)}"))
+    balancer + (MicroService("hello-world") -> Location("/ping/.*", pingUpstream))
+    balancer ++ (pingUpstream -> Endpoint(s"http://${address.host.getOrElse("")}:${config.getInt("application.port")}"))
   }
 
   private[api] def stop(address: Address): Unit = {
     log.debug(s"Stopping REST routes using address $address")
 
-    balancer -- (pingUpstream -> Endpoint(s"http://${address.host.getOrElse("")}:${address.port.getOrElse(0)}"))
+    balancer -- (pingUpstream -> Endpoint(s"http://${address.host.getOrElse("")}:${config.getInt("application.port")}"))
   }
 
 }

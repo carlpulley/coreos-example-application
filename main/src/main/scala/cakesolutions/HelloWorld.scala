@@ -6,22 +6,21 @@ import akka.event.LoggingReceive
 import akka.persistence.{SnapshotOffer, PersistentActor}
 import cakesolutions.logging.Logging
 import com.typesafe.config.ConfigFactory
-import java.net.InetAddress
 import scala.collection.JavaConversions._
 import scala.language.postfixOps
 
-object HelloWorld {
-  case object Ping
+object HelloWorld extends Configuration {
+  case class Ping(index: Int)
   case class Pong(message: String)
 
   val shardName = "hello-world"
 
   val idExtractor: ShardRegion.IdExtractor = {
-    case Ping => ("HelloWorld", Ping)
+    case ping @ Ping(index) => (s"HelloWorld-$index", ping)
   }
 
   val shardResolver: ShardRegion.ShardResolver = {
-    case Ping => "HelloWorld"
+    case Ping(index) => (index % config.getInt("application.shards")).toString
   }
 
   val props = Props[HelloWorld]
@@ -45,10 +44,10 @@ class HelloWorld extends PersistentActor with Configuration with Logging with Au
 
   def receiveCommand: Receive = LoggingReceive {
     withPassivation {
-      case Ping =>
-        persist(Ping) { evt =>
+      case ping: Ping =>
+        persist(ping) { evt =>
           saveSnapshot(evt)
-          sender() ! Pong(InetAddress.getLocalHost.getHostAddress)
+          sender() ! Pong(config.getString("application.hostname"))
         }
     }
   }

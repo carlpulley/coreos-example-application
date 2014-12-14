@@ -12,21 +12,21 @@ object Dependencies {
     val cluster               = "com.typesafe.akka"   %% "akka-cluster"                  % version
     val contrib               = "com.typesafe.akka"   %% "akka-contrib"                  % version
     val kernel                = "com.typesafe.akka"   %% "akka-kernel"                   % version
+    val multi_node_testkit    = "com.typesafe.akka"   %% "akka-multi-node-testkit"       % version
     val persistence           = "com.typesafe.akka"   %% "akka-persistence-experimental" % version
     val persistence_cassandra = "com.github.krasserm" %% "akka-persistence-cassandra"    % "0.4-SNAPSHOT"
     val remote                = "com.typesafe.akka"   %% "akka-remote"                   % version
     val slf4j                 = "com.typesafe.akka"   %% "akka-slf4j"                    % version
     val testkit               = "com.typesafe.akka"   %% "akka-testkit"                  % version
-    val multi_node_testkit    = "com.typesafe.akka"   %% "akka-multi-node-testkit"       % version
   }
 
   object spray {
     val version = "1.3.2"
 
-    val can     = "io.spray" %% "spray-can"     % version
-    val httpx   = "io.spray" %% "spray-httpx"   % version
-    val routing = "io.spray" %% "spray-routing" % version
-    val testkit = "io.spray" %% "spray-testkit" % version
+    val can     = "io.spray" %% "spray-can"                % version
+    val httpx   = "io.spray" %% "spray-httpx"              % version
+    val routing = "io.spray" %% "spray-routing-shapeless2" % version
+    val testkit = "io.spray" %% "spray-testkit"            % version
   }
 
   val commons       = "org.apache.commons" %  "commons-lang3"   % "3.3.2"

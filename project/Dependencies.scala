@@ -29,12 +29,18 @@ object Dependencies {
     val testkit = "io.spray" %% "spray-testkit"            % version
   }
 
+  object scalaz {
+    val core = "org.scalaz" %% "scalaz-core"  % "7.1.0"
+  }
+
+  val apns          = "com.notnoop.apns"   % "apns"             % "0.1.6" // Apple push notifications
   val commons       = "org.apache.commons" %  "commons-lang3"   % "3.3.2"
   val etcd          = "net.nikore.etcd"    %% "scala-etcd"      % "0.7"
   val logback       = "ch.qos.logback"     %  "logback-classic" % "1.1.2"
   val scalacheck    = "org.scalacheck"     %% "scalacheck"      % "1.11.6"
   val scalacompiler = "org.scala-lang"     % "scala-compiler"   % scala
   val scalatest     = "org.scalatest"      %% "scalatest"       % "2.2.1"
+  val scodec_bits   = "org.typelevel"      %% "scodec-bits"     % "1.0.4"
   val specs2        = "org.specs2"         %% "specs2"          % "2.4.2-scalaz-7.0.6"
   val typesafe      = "com.typesafe"       %  "config"          % "1.2.1"
 

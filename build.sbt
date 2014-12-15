@@ -14,6 +14,8 @@ lazy val api = project.in(file("lib/api")).dependsOn(common, logging)
 
 lazy val cluster = project.in(file("lib/cluster")).dependsOn(common, etcd, logging) configs (MultiJvm)
 
-lazy val main = project.in(file("main")).dependsOn(api, cluster, common, etcd, logging)
+lazy val persistence = project.in(file("lib/persistence")).dependsOn(common, logging)
 
-lazy val root = project.in(file(".")).aggregate(api, cluster, common, etcd, logging, main)
+lazy val main = project.in(file("main")).dependsOn(api, cluster, common, etcd, logging, persistence)
+
+lazy val root = project.in(file(".")).aggregate(api, cluster, common, etcd, logging, main, persistence)

@@ -15,7 +15,7 @@ trait Service extends Directives with Configuration {
 
   implicit val timeout: Timeout = Timeout(config.getDuration("application.timeout", SECONDS).seconds)
 
-  def boot(handler: ActorRef, address: Address) = RestApi(
+  def boot(address: Address, handler: ActorRef) = RestApi(
     route = Some({ ec: ExecutionContext => applicationRoute(handler)(ec) })
   )
 

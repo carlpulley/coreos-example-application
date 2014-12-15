@@ -15,7 +15,7 @@ class Main extends BootableCluster(ActorSystem("HelloWorld")) with api.BalancedS
       idExtractor = HelloWorld.idExtractor,
       shardResolver = HelloWorld.shardResolver
     )
-    val api = boot(handler, cluster.selfAddress)
+    val api = boot(cluster.selfAddress, handler)
 
     startupApi(api)
     system.registerOnTermination {

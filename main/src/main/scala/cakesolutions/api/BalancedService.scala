@@ -15,7 +15,7 @@ trait BalancedService extends Service with WithLoadBalancer {
   val balancer = LoadBalance(config.getString("application.domain"))(etcd)
   val pingUpstream = "hello-world-ping"
 
-  override def boot(handler: ActorRef, address: Address) = super.boot(handler, address) + RestApi(
+  override def boot(address: Address, handler: ActorRef) = super.boot(address, handler) + RestApi(
     start = Some({ () => start(address) }),
     stop  = Some({ () => stop(address) })
   )

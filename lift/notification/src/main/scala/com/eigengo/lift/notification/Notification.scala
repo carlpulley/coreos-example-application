@@ -1,19 +1,20 @@
 package com.eigengo.lift.notification
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.actor._
 import akka.routing.RoundRobinPool
 import com.eigengo.lift.notification.NotificationProtocol.{WatchDestination, MobileDestination, PushMessage}
 import com.eigengo.lift.profile.UserProfileProtocol.{AndroidUserDevice, IOSUserDevice, UserDevices, UserGetDevices}
 
 object Notification {
   val name = "notification"
-  def props(userProfile: ActorRef) = Props(classOf[Notification], userProfile).withRouter(RoundRobinPool(nrOfInstances = 15))
+  def props(userProfile: ActorSelection) = Props(classOf[Notification], userProfile).withRouter(RoundRobinPool(nrOfInstances = 15))
 }
 
-class Notification(userProfile: ActorRef) extends Actor with ActorLogging {
+class Notification(userProfile: ActorSelection) extends Actor with ActorLogging {
   import akka.pattern.ask
   import com.eigengo.lift.common.Timeouts.defaults._
   import context.dispatcher
+
   private val apple = context.actorOf(ApplePushNotification.props)
 
   override def receive: Receive = {

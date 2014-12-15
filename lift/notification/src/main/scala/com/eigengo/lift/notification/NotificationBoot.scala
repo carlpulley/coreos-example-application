@@ -1,19 +1,15 @@
 package com.eigengo.lift.notification
 
-import akka.actor.{ActorRef, ActorSystem}
-import cakesolutions.api.WithApi
+import akka.actor.ActorSystem
 import cakesolutions.etcd.WithEtcd
 import cakesolutions.{Configuration, MinNumJoinConstraint, BootableCluster}
-import com.eigengo.lift.common.MicroserviceApp.BootedNode
-import com.eigengo.lift.profile.{UserProfileProcessor, UserProfile, api}
 
-case class NotificationBoot(notification: ActorRef) extends BootedNode
+class NotificationBoot extends BootableCluster(ActorSystem("Lift")) with MinNumJoinConstraint with Configuration with WithEtcd {
 
-object NotificationBoot {
-
-  def boot(userProfile: ActorRef)(implicit system: ActorSystem): NotificationBoot = {
+  cluster.registerOnMemberUp {
+    // Boot the microservice when member is 'Up'
+    val userProfile = system.actorSelection("profile") // FIXME:
     val notification = system.actorOf(Notification.props(userProfile), Notification.name)
-    NotificationBoot(notification)
   }
 
 }

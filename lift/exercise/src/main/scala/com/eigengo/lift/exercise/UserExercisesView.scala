@@ -3,7 +3,7 @@ package com.eigengo.lift.exercise
 import akka.actor.{ActorLogging, Props}
 import akka.contrib.pattern.ShardRegion
 import akka.persistence.{SnapshotOffer, PersistentView}
-import cakesolutions.AutoPassivation
+import cakesolutions.{Configuration, AutoPassivation}
 import com.eigengo.lift.common.UserId
 import com.eigengo.lift.exercise.ExerciseClassifier.ModelMetadata
 import com.typesafe.config.ConfigFactory
@@ -197,7 +197,7 @@ object UserExercisesView {
 
 }
 
-class UserExercisesView extends PersistentView with ActorLogging with AutoPassivation {
+class UserExercisesView extends PersistentView with ActorLogging with AutoPassivation with Configuration {
   import com.eigengo.lift.exercise.UserExercisesView._
 
 import scala.concurrent.duration._

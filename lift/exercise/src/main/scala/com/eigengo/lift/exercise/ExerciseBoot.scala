@@ -10,10 +10,11 @@ class ExerciseBoot extends BootableCluster(ActorSystem("Lift")) with api.Balance
 
   cluster.registerOnMemberUp {
     // Register and boot the microservices when member is 'Up'
+    val notification = system.actorSelection("notification") // FIXME:
     val exerciseClassifiers = system.actorOf(ExerciseClassifiers.props, ExerciseClassifiers.name)
     val userExercise = ClusterSharding(system).start(
       typeName = UserExercises.shardName,
-      entryProps = UserExercises.shardProps(???, exerciseClassifiers),
+      entryProps = UserExercises.shardProps(notification, exerciseClassifiers),
       idExtractor = UserExercises.idExtractor,
       shardResolver = UserExercises.shardResolver
     )
@@ -32,3 +33,4 @@ class ExerciseBoot extends BootableCluster(ActorSystem("Lift")) with api.Balance
   }
 
 }
+

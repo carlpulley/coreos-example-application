@@ -3,7 +3,7 @@ package com.eigengo.lift.profile
 import akka.actor.{ActorLogging, Props}
 import akka.contrib.pattern.ShardRegion
 import akka.persistence.{PersistentActor, SnapshotOffer}
-import cakesolutions.AutoPassivation
+import cakesolutions.{AutoPassivation, Configuration}
 import com.eigengo.lift.common.UserId
 import com.typesafe.config.ConfigFactory
 import scala.collection.JavaConversions._
@@ -77,7 +77,7 @@ object UserProfile {
 /**
  * User profile domain
  */
-class UserProfile extends PersistentActor with ActorLogging with AutoPassivation {
+class UserProfile extends PersistentActor with ActorLogging with AutoPassivation with Configuration {
   import com.eigengo.lift.profile.UserProfile._
   import com.eigengo.lift.profile.UserProfileProtocol._
   import scala.concurrent.duration._

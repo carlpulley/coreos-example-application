@@ -3,7 +3,7 @@ package com.eigengo.lift.exercise
 import akka.actor._
 import akka.contrib.pattern.ShardRegion
 import akka.persistence.{PersistentActor, SnapshotOffer}
-import cakesolutions.AutoPassivation
+import cakesolutions.{Configuration, AutoPassivation}
 import com.eigengo.lift.common.UserId
 import com.eigengo.lift.exercise.AccelerometerData._
 import com.eigengo.lift.exercise.ExerciseClassifier.{Classify, FullyClassifiedExercise, NoExercise, UnclassifiedExercise}
@@ -24,9 +24,9 @@ object UserExercises {
   /** The shard name */
   val shardName = "user-exercises"
   /** The sessionProps to create the actor on a node */
-  def props(notification: ActorRef, exerciseClassifiers: ActorRef) = Props(classOf[UserExercises], notification, exerciseClassifiers)
+  def props(notification: ActorSelection, exerciseClassifiers: ActorRef) = Props(classOf[UserExercises], notification, exerciseClassifiers)
 
-  def shardProps(notification: ActorRef, exerciseClassifiers: ActorRef): Option[Props] = {
+  def shardProps(notification: ActorSelection, exerciseClassifiers: ActorRef): Option[Props] = {
     val roles = ConfigFactory.load().getStringList("akka.cluster.roles")
     roles.find("lift-exercise" ==).map(_ => props(notification, exerciseClassifiers))
   }
@@ -109,8 +109,8 @@ object UserExercises {
  * Models each user's exercises as its state, which is updated upon receiving and classifying the
  * ``AccelerometerData``. It also provides the query for the current state.
  */
-class UserExercises(notification: ActorRef, exerciseClasssifiers: ActorRef)
-  extends PersistentActor with ActorLogging with AutoPassivation {
+class UserExercises(notification: ActorSelection, exerciseClasssifiers: ActorRef)
+  extends PersistentActor with ActorLogging with AutoPassivation with Configuration {
   import scala.concurrent.duration._
 
   private val userId = UserId(self.path.name)

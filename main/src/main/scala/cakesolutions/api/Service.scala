@@ -9,15 +9,19 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import spray.routing._
 
-trait Service extends Directives with Configuration {
+trait Service extends Directives with Configuration with BootableService {
 
   import HelloWorld._
 
   implicit val timeout: Timeout = Timeout(config.getDuration("application.timeout", SECONDS).seconds)
 
-  def boot(address: Address, handler: ActorRef) = RestApi(
-    route = Some({ ec: ExecutionContext => applicationRoute(handler)(ec) })
-  )
+  override def boot(address: Address, handlers: ActorRef*) = {
+    require(handlers.nonEmpty, "At least one routing handler needs to be specified")
+
+    super.boot(address, handlers: _*) + RestApi(
+      route = Some({ ec: ExecutionContext => applicationRoute(handlers.head)(ec) })
+    )
+  }
 
   private[api] def applicationRoute(actorRef: ActorRef)(implicit ec: ExecutionContext) = {
     path("ping" / IntNumber) { index =>

@@ -5,12 +5,13 @@ import akka.contrib.pattern.ClusterSharding
 import cakesolutions.api.WithApi
 import cakesolutions.etcd.WithEtcd
 import cakesolutions._
+import com.eigengo.lift.notification.Notification
 
 class ExerciseBoot extends BootableCluster(ActorSystem("Lift")) with api.BalancedExerciseService with MinNumJoinConstraint with Configuration with WithEtcd with WithApi {
 
   cluster.registerOnMemberUp {
     // Register and boot the microservices when member is 'Up'
-    val notification = system.actorSelection("notification") // FIXME:
+    val notification = system.actorSelection(Notification.name) // FIXME:
     val exerciseClassifiers = system.actorOf(ExerciseClassifiers.props, ExerciseClassifiers.name)
     val userExercise = ClusterSharding(system).start(
       typeName = UserExercises.shardName,

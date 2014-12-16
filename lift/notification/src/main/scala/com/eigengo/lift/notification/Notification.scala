@@ -7,10 +7,10 @@ import com.eigengo.lift.profile.UserProfileProtocol.{AndroidUserDevice, IOSUserD
 
 object Notification {
   val name = "notification"
-  def props(userProfile: ActorSelection) = Props(classOf[Notification], userProfile).withRouter(RoundRobinPool(nrOfInstances = 15))
+  def props(userProfile: ActorRef) = Props(classOf[Notification], userProfile).withRouter(RoundRobinPool(nrOfInstances = 15))
 }
 
-class Notification(userProfile: ActorSelection) extends Actor with ActorLogging {
+class Notification(userProfile: ActorRef) extends Actor with ActorLogging {
   import akka.pattern.ask
   import com.eigengo.lift.common.Timeouts.defaults._
   import context.dispatcher

@@ -21,14 +21,14 @@ lazy val persistence = project.in(file("lib/persistence")).dependsOn(common, log
 lazy val lift_common = project.in(file("lift/common"))
 
 //Exercise
-lazy val exercise = project.in(file("lift/exercise")).dependsOn(api, cluster, common, etcd, logging, persistence, notificationProtocol, profileProtocol, lift_common)
+lazy val exercise = project.in(file("lift/exercise")).dependsOn(api, cluster, common, etcd, logging, persistence, notification, notificationProtocol, profileProtocol, lift_common)
 
 //User profiles
 lazy val profile = project.in(file("lift/profile")).dependsOn(api, cluster, common, etcd, logging, persistence, profileProtocol, lift_common)
 lazy val profileProtocol = project.in(file("lift/profile-protocol")).dependsOn(lift_common)
 
 //Notifications
-lazy val notification = project.in(file("lift/notification")).dependsOn(cluster, lift_common, notificationProtocol, profileProtocol)
+lazy val notification = project.in(file("lift/notification")).dependsOn(cluster, lift_common, notificationProtocol, profile, profileProtocol)
 lazy val notificationProtocol = project.in(file("lift/notification-protocol")).dependsOn(lift_common)
 
 lazy val lift = project.in(file(".")).aggregate(api, cluster, common, etcd, logging, persistence, lift_common, exercise, profile, profileProtocol, notification, notificationProtocol)

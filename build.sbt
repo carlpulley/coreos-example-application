@@ -2,7 +2,7 @@ import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys._
 import sbt._
 import Keys._
 
-name := "HelloWorld"
+name := "CoreOS Distributed Application"
 
 lazy val common = project.in(file("lib/common"))
 
@@ -16,6 +16,4 @@ lazy val cluster = project.in(file("lib/cluster")).dependsOn(common, etcd, loggi
 
 lazy val persistence = project.in(file("lib/persistence")).dependsOn(common, logging)
 
-lazy val main = project.in(file("main")).dependsOn(api, cluster, common, etcd, logging, persistence)
-
-lazy val root = project.in(file(".")).aggregate(api, cluster, common, etcd, logging, main, persistence)
+lazy val root = project.in(file(".")).aggregate(api, cluster, common, etcd, logging, persistence)

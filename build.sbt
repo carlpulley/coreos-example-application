@@ -2,7 +2,7 @@ import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys._
 import sbt._
 import Keys._
 
-name := "CoreOS Distributed Application"
+name := "Distributed Microservice Framework for CoreOS"
 
 lazy val common = project.in(file("lib/common"))
 

@@ -34,7 +34,9 @@ object Dependencies {
   }
 
   object scalaz {
-    val core = "org.scalaz" %% "scalaz-core"  % "7.1.0"
+    val version = "7.1.0"
+
+    val core = "org.scalaz" %% "scalaz-core"  % version
   }
 
   val apns          = "com.notnoop.apns"   % "apns"             % "0.1.6" // Apple push notifications
@@ -45,7 +47,7 @@ object Dependencies {
   val scalacompiler = "org.scala-lang"     % "scala-compiler"   % scala
   val scalatest     = "org.scalatest"      %% "scalatest"       % "2.2.1"
   val scodec_bits   = "org.typelevel"      %% "scodec-bits"     % "1.0.4"
-  val specs2        = "org.specs2"         %% "specs2"          % "2.4.2-scalaz-7.0.6"
+  val specs2        = "org.specs2"         %% "specs2"          % "3.0-M1"
   val typesafe      = "com.typesafe"       %  "config"          % "1.2.1"
 
 }

@@ -24,9 +24,9 @@ object UserExercises {
   /** The shard name */
   val shardName = "user-exercises"
   /** The sessionProps to create the actor on a node */
-  def props(notification: ActorRef, exerciseClassifiers: ActorRef) = Props(classOf[UserExercises], notification, exerciseClassifiers)
+  def props(notification: ActorSelection, exerciseClassifiers: ActorRef) = Props(classOf[UserExercises], notification, exerciseClassifiers)
 
-  def shardProps(notification: ActorRef, exerciseClassifiers: ActorRef): Option[Props] = {
+  def shardProps(notification: ActorSelection, exerciseClassifiers: ActorRef): Option[Props] = {
     val roles = ConfigFactory.load().getStringList("akka.cluster.roles")
     roles.find("lift-exercise" ==).map(_ => props(notification, exerciseClassifiers))
   }
@@ -109,7 +109,7 @@ object UserExercises {
  * Models each user's exercises as its state, which is updated upon receiving and classifying the
  * ``AccelerometerData``. It also provides the query for the current state.
  */
-class UserExercises(notification: ActorRef, exerciseClasssifiers: ActorRef)
+class UserExercises(notification: ActorSelection, exerciseClasssifiers: ActorRef)
   extends PersistentActor with ActorLogging with AutoPassivation with Configuration {
   import scala.concurrent.duration._
 

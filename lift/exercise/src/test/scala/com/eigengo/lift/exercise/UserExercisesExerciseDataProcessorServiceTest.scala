@@ -1,10 +1,11 @@
 package com.eigengo.lift.exercise
 
+package api
+
 import akka.actor.ActorRefFactory
 import akka.testkit.{ImplicitSender, TestKitBase, TestProbe}
 import com.eigengo.lift.common.UserId
 import com.eigengo.lift.exercise.UserExercises.UserExerciseDataProcess
-import com.eigengo.lift.exercise.api.ExerciseService
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{FlatSpec, Matchers}
 import scodec.bits.BitVector

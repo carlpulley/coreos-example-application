@@ -11,7 +11,7 @@ class ExerciseBoot extends BootableCluster(ActorSystem("Lift")) with api.Balance
 
   cluster.registerOnMemberUp {
     // Register and boot the microservices when member is 'Up'
-    val notification = system.actorSelection(Notification.name) // FIXME:
+    val notification = system.actorSelection(Notification.name)
     val exerciseClassifiers = system.actorOf(ExerciseClassifiers.props, ExerciseClassifiers.name)
     val userExercise = ClusterSharding(system).start(
       typeName = UserExercises.shardName,

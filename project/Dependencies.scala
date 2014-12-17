@@ -20,6 +20,10 @@ object Dependencies {
     val testkit               = "com.typesafe.akka"   %% "akka-testkit"                  % version
   }
 
+  object json4s {
+    val native = "org.json4s" %% "json4s-native" % "3.2.11"
+  }
+
   object spray {
     val version = "1.3.2"
 

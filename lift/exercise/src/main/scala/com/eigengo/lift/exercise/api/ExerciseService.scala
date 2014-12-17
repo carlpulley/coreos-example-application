@@ -21,7 +21,7 @@ trait ExerciseService extends Directives with ExerciseMarshallers {
     route = Some({ ec: ExecutionContext => exerciseRoute(userExercises, userExercisesView, exerciseClassifiers)(ec) })
   )
 
-  private def exerciseRoute(userExercises: ActorRef, userExercisesView: ActorRef, exerciseClassifiers: ActorRef)(implicit ec: ExecutionContext) =
+  private[api] def exerciseRoute(userExercises: ActorRef, userExercisesView: ActorRef, exerciseClassifiers: ActorRef)(implicit ec: ExecutionContext) =
     path("exercise" / "musclegroups") {
       get {
         complete {

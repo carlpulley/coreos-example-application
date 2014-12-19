@@ -13,6 +13,7 @@ libraryDependencies ++= Seq(
   akka.remote,
   akka.slf4j,
   // Miscellaneous
+  cassandra_driver,
   commons,
   logback,
   typesafe

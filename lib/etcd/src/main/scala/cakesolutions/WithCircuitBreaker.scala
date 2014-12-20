@@ -2,15 +2,17 @@ package cakesolutions
 
 import cakesolutions.WithLoadBalancer._
 import java.util.concurrent.TimeUnit
+import java.util.UUID
 import scala.concurrent.duration._
 
 object WithCircuitBreaker {
 
   sealed trait Fallback {
+    def id: UUID
     def toString: String
   }
 
-  case class Response(message: String = "Please try again latter", code: Int = 400) extends Fallback {
+  case class Response(id: UUID, message: String = "Please try again latter", code: Int = 400) extends Fallback {
     require(code > 0)
 
     override def toString: String = {
@@ -27,7 +29,7 @@ object WithCircuitBreaker {
     }
   }
 
-  case class Redirect(url: String) extends Fallback {
+  case class Redirect(id: UUID, url: String) extends Fallback {
     override def toString: String = {
       s"""
          |{
@@ -49,7 +51,7 @@ object WithCircuitBreaker {
       val cbreaker =
         s"""
         |{
-        |  "Id":"cb1",
+        |  "Id":"${fallback.id}",
         |  "Priority":1,
         |  "Type":"cbreaker",
         |  "Middleware":{
@@ -63,7 +65,7 @@ object WithCircuitBreaker {
       """.stripMargin
       log.debug(s"Enabling circuit breakers for $microservice -> $location location in domain $domain")
 
-      etcd.setKey(s"/vulcand/hosts/$domain/locations/${microservice.name}/middlewares/cbreaker/cb1", cbreaker)
+      etcd.setKey(s"/vulcand/hosts/$domain/locations/${microservice.name}/middlewares/cbreaker/${fallback.id}", cbreaker)
       this
     }
 

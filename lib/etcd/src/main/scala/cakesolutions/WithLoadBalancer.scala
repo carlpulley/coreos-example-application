@@ -19,11 +19,11 @@ object WithLoadBalancer {
   case class Endpoint(url: String, id: UUID = UUID.randomUUID())
   case class Location(path: String, upstream: String)
 
-  case class LoadBalance(domain: String)(implicit etcd: EtcdClient) {
+  case class LoadBalance(domain: String)(implicit val etcd: EtcdClient) {
 
-    private var upstreams = Map.empty[String, Seq[Endpoint]]
-    private var locations = Map.empty[MicroService, Location]
-    private val log = Logger(this.getClass())
+    protected var upstreams = Map.empty[String, Seq[Endpoint]]
+    protected var locations = Map.empty[MicroService, Location]
+    protected val log = Logger(this.getClass)
 
     def +(mapping: (MicroService, Location)): LoadBalance = {
       val (microservice, location) = mapping

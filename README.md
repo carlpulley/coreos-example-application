@@ -28,7 +28,9 @@
     docker logs -f app-1 | grep -v akka.cluster.ClusterHeartbeatSender
     # TERMINAL 2 - execute the following shell commands:
     for i in 1 2 3 4; do
-      curl -v -H "Host: helloworld.cakesolutions.net" http://172.17.8.103:8888/ping/$i
+      echo -n "GET /ping/$i -> "
+      curl -H "Host: helloworld.cakesolutions.net" http://172.17.8.103:8888/ping/$i
+      echo
     done
     # In viewing terminal 1, you should see evidence that:
     #   - Vulcand has round-robin delivered a GET request to app-1

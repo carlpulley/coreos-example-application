@@ -1,18 +1,8 @@
 package cakesolutions
 
 import cakesolutions.WithLoadBalancer._
-import cakesolutions.etcd.WithEtcd
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._
-
-trait WithCircuitBreaker {
-  this: WithLoadBalancer with WithEtcd with Configuration =>
-
-  import WithCircuitBreaker._
-
-  override def balancer: LoadBalance with CircuitBreaker
-
-}
 
 object WithCircuitBreaker {
 
@@ -20,7 +10,9 @@ object WithCircuitBreaker {
     def toString: String
   }
 
-  case class Response(message: String, code: Int = 400) extends Fallback {
+  case class Response(message: String = "Please try again latter", code: Int = 400) extends Fallback {
+    require(code > 0)
+
     override def toString: String = {
       s"""
          |{
@@ -49,9 +41,10 @@ object WithCircuitBreaker {
   }
 
   trait CircuitBreaker extends Configuration {
-    this: LoadBalance =>
+    mixin: LoadBalance =>
 
-    def +(mapping: (MicroService, Location), fallback: Fallback = Response("Please try again latter")): LoadBalance with CircuitBreaker = {
+    def +(mapping: (MicroService, Location), fallback: Fallback): LoadBalance with CircuitBreaker = {
+      mixin.+(mapping)
       val (microservice, location) = mapping
       val cbreaker =
         s"""

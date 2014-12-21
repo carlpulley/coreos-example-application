@@ -12,7 +12,7 @@ object WithCircuitBreaker {
     def toString: String
   }
 
-  case class Response(id: UUID, message: String = "Please try again latter", code: Int = 400) extends Fallback {
+  case class Response(message: String = "Please try again latter", code: Int = 400, id: UUID = UUID.randomUUID()) extends Fallback {
     require(code > 0)
 
     override def toString: String = {
@@ -29,7 +29,7 @@ object WithCircuitBreaker {
     }
   }
 
-  case class Redirect(id: UUID, url: String) extends Fallback {
+  case class Redirect(url: String, id: UUID = UUID.randomUUID()) extends Fallback {
     override def toString: String = {
       s"""
          |{

@@ -12,7 +12,7 @@ object WithLimit {
     def toString: String
   }
 
-  case class Rate(id: UUID, requests: Int, burst: Int, period: Duration = 1.second) extends LimitConfig {
+  case class Rate(requests: Int, burst: Int, period: Duration = 1.second, id: UUID = UUID.randomUUID()) extends LimitConfig {
     require(requests > 0)
     require(burst > 0)
 
@@ -34,7 +34,7 @@ object WithLimit {
     }
   }
 
-  case class Connection(id: UUID, connections: Int) extends LimitConfig {
+  case class Connection(connections: Int, id: UUID = UUID.randomUUID()) extends LimitConfig {
     require(connections > 0)
 
     val `type` = "connlimit"

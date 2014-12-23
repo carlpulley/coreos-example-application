@@ -47,6 +47,7 @@ object Dependencies {
   val scalacheck       = "org.scalacheck"         %% "scalacheck"            % "1.11.6"
   val scalacompiler    = "org.scala-lang"         %  "scala-compiler"        % scala
   val scalatest        = "org.scalatest"          %% "scalatest"             % "2.2.1"
+  val scodec_bits      = "org.typelevel"          %% "scodec-bits"           % "1.0.4"
   val specs2           = "org.specs2"             %% "specs2"                % "3.0-M1"
   val typesafe         = "com.typesafe"           %  "config"                % "1.2.1"
 

@@ -38,11 +38,13 @@ object Dependencies {
   val cassandra_driver = "com.datastax.cassandra" %  "cassandra-driver-core" % "2.1.3"
   val commons          = "org.apache.commons"     %  "commons-lang3"         % "3.3.2"
   val etcd             = "net.nikore.etcd"        %% "scala-etcd"            % "0.7"
+  val joda_time        = "joda-time"              %  "joda-time"             % "2.6"
   val logback          = "ch.qos.logback"         %  "logback-classic"       % "1.1.2"
+  val pickling         = "org.scala-lang.modules" %% "scala-pickling"        % "0.10.0-SNAPSHOT"
   val scalacheck       = "org.scalacheck"         %% "scalacheck"            % "1.11.6"
   val scalacompiler    = "org.scala-lang"         %  "scala-compiler"        % scala
   val scalatest        = "org.scalatest"          %% "scalatest"             % "2.2.1"
-  val specs2           = "org.specs2"             %% "specs2"                % "3.0-M1"
+  val specs2           = "org.specs2"             %% "specs2"                % "3.0-M2"
   val typesafe         = "com.typesafe"           %  "config"                % "1.2.1"
 
 }

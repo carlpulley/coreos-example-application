@@ -9,6 +9,7 @@ object Project {
   val settings = Defaults.defaultConfigs ++ Seq(
     organization := "cakesolutions",
     version := "0.1.0-SNAPSHOT",
+    resolvers := Resolvers.resolvers,
     scalaVersion := scala,
     scalacOptions ++= Seq(
       "-encoding", "UTF-8",

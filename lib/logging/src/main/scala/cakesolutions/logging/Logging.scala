@@ -38,4 +38,12 @@ trait Logging extends Actor with ActorLogging with ExceptionLogging {
     super.postStop()
   }
 
+  /**
+   * We ensure that receive functions have message receiving logged at DEBUG level
+   */
+  override def aroundReceive(receive: Receive, msg: Any): Unit = {
+    log.debug(s"${getClass.getSimpleName} received message $msg from actor ${sender()}")
+    super.aroundReceive(receive, msg)
+  }
+
 }

@@ -16,4 +16,6 @@ lazy val cluster = project.in(file("lib/cluster")).dependsOn(common, etcd, loggi
 
 lazy val persistence = project.in(file("lib/persistence")).dependsOn(common, logging)
 
-lazy val root = project.in(file(".")).aggregate(api, cluster, common, etcd, logging, persistence)
+lazy val signing = project.in(file("lib/keyless-signing")).dependsOn(common, logging, persistence)
+
+lazy val root = project.in(file(".")).aggregate(api, cluster, common, etcd, logging, persistence, signing)

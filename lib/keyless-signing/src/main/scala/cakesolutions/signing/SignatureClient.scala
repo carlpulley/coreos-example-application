@@ -5,24 +5,22 @@ package signing
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
+import cakesolutions.logging.{Logging => LoggingActor}
 import java.util.concurrent.TimeUnit
 import org.joda.time.{DateTimeZone, DateTime, Seconds}
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
+import scala.concurrent.Future
 import scalaz._
 import Scalaz._
 
-trait SignatureClient extends MerkleTrees with Configuration {
+trait SignatureClient extends MerkleTrees with LoggingActor with Configuration {
   this: HashingFunction =>
 
   import SignatureProtocol._
 
-  implicit val timeout = Timeout(config.getDuration("signing.timeout", TimeUnit.SECONDS).seconds)
+  import context.dispatcher
 
-  /**
-   * Dispatcher for running our futures.
-   */
-  implicit def executionContext: ExecutionContext
+  implicit val timeout = Timeout(config.getDuration("signing.timeout", TimeUnit.SECONDS).seconds)
 
   /**
    * Reference to signature server actor.
@@ -84,7 +82,8 @@ trait SignatureClient extends MerkleTrees with Configuration {
   }
 
   /**
-   * Used to sign client data.
+   * Used to sign client data. As the signature server encapsulates a hash calendar with a 1 second accuracy, this operation
+   * generates timestamps in time that is bounded by this limit.
    *
    * @param rawData     data to be signed
    * @param certificate public key certificate to be used in signing (must already be published)
@@ -119,9 +118,15 @@ trait SignatureClient extends MerkleTrees with Configuration {
   def verifySignature(signature: Signature, certificate: PublicKeyCertificate): ValidationNel[String, Unit] = {
     val validClientId  = if (signature.client.id == certificate.client.id)                                success(()) else failureNel("client IDs fail to match")
     val validRootHash  = if (rootHash(signature.auth, signature.authProof) == certificate.publicKey.root) success(()) else failureNel("signature fails to compute certificate root hash")
-    val timestamp      = ??? // FIXME: extract from signature.data and signature.dataProof
-    val validTimestamp = if (timestamp == certificate.createdAt.plus(signature.offset))                   success(()) else failureNel("signature has an incorrect timestamp")
-    val serverPath     = ??? // FIXME: extract from signature.data and signature.dataProof
+    val timestamp      = signature.timestamp.dataProof.zipWithIndex.map {
+      case (Left(_), height) =>
+        math.pow(2, height - 1).toInt
+
+      case (Right(_), _) =>
+        0
+    }.sum
+    val validTimestamp = if (timestamp == certificate.createdAt.plus(signature.offset).getMillis / 1000)  success(()) else failureNel("signature has an incorrect timestamp")
+    val serverPath     = ??? // FIXME: extract from signature.timestamp.data and signature.timestamp.dataProof
     val validServerId  = if (serverPath == certificate.server)                                            success(()) else failureNel("signature is bound to a different server")
 
     validClientId +++ validRootHash +++ validTimestamp +++ validServerId

@@ -11,7 +11,7 @@ trait MerkleTrees extends TreeFunctions {
   protected case class State(iv: Hash = random, leafHash: Hash = zero, roots: List[MerkleTree] = List.empty[MerkleTree], offset: Int = 0)
 
   def append[D](data: D, state: State): (Hash, State) = {
-    val State(iv, leafHash, roots, offset) = state
+    val State(iv, leafHash, roots, _) = state
     val dataHash = hash[D](data)
     val maskingHash = hash[Hash](leafHash, iv)
     val newLeafHash = hash[Hash](maskingHash, dataHash, hash[Int](0))

@@ -1,7 +1,10 @@
 package cakesolutions.signing
 
+import akka.actor.ActorRef
 import cakesolutions.logging.{Logging => LoggingActor}
 import java.util.UUID
+import org.joda.time.{DateTimeZone, DateTime, Seconds}
+import scala.concurrent.duration._
 import scalaz._
 import Scalaz._
 
@@ -11,9 +14,12 @@ trait SignatureServer extends MerkleTrees with LoggingActor with ValidationFunct
 
   import SignatureProtocol._
 
-  // TODO: shard actor based on client ID?
-  private var certificates = Map.empty[UUID, PublicKeyCertificate]
+  private case class Event(receivedAt: DateTime, sender: ActorRef, data: Hash)
+  private case class SendTimestamp(period: DateTime)
 
+  // TODO: shard actor based on server and client ID?
+  private var certificates = Map.empty[UUID, PublicKeyCertificate]
+  private var events = List.empty[Event]
   private var state = State()
 
   private def valid(certificate: PublicKeyCertificate): ValidationNel[String, Unit] = {
@@ -24,7 +30,15 @@ trait SignatureServer extends MerkleTrees with LoggingActor with ValidationFunct
     validRequest +++ validCreationDate +++ validServer
   }
 
-  def receive = {
+  def receive = external orElse internal
+
+  // Every second, we return aggregated timestamp data to senders of outstanding events (in the given time interval)
+  context.system.scheduler.schedule(0.seconds, 1.second) {
+    self ! SendTimestamp(new DateTime(DateTimeZone.UTC))
+  }
+
+  // Event processing that is external/public to the signature server
+  def external: Receive = {
     case Publish(certificate) =>
       valid(certificate) match {
         case Success(_) =>
@@ -53,16 +67,22 @@ trait SignatureServer extends MerkleTrees with LoggingActor with ValidationFunct
 
     case GetTimestamp(data, client) =>
       if (certificates.contains(client.id)) {
-        // FIXME: need to ensure 1 sec. rounds are implemented here!
-        //val offset = Seconds.secondsBetween(certificates(client.id).createdAt, new DateTime(DateTimeZone.UTC))
-        val (timestamp, newState) = append((data, client.id, self.path), state)
-        val timestampProof = ???
-        state = newState
-
-        sender() ! \/-(Timestamp(timestamp, timestampProof))
+        // We store received event hashes - scheduler is "responsible" for adding aggregated events to hash calendar
+        events = events :+ Event(new DateTime(DateTimeZone.UTC), sender(), hash((data, client.id, self.path)))
       } else {
         sender() ! -\/(s"Failed to timestamp $data for client $client")
       }
+  }
+
+  // Event processing that is internal/private to the signature server
+  def internal: Receive = {
+    case SendTimestamp(period) =>
+      val receivers = events.filter(evt => Seconds.secondsBetween(evt.receivedAt, period).getSeconds == 0)
+      events = events.filterNot(evt => Seconds.secondsBetween(evt.receivedAt, period).getSeconds == 0)
+      val (timestamp, newState) = append(hash(receivers.map(_.data): _*), state)
+      val timestampProof = hashChain(offset, state.roots) // FIXME:
+      state = newState
+      receivers.foreach(_.sender ! \/-(Timestamp(timestamp, timestampProof)))
   }
 
 }

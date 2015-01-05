@@ -1,11 +1,9 @@
 package cakesolutions.signing
 
-
 import cakesolutions.logging.{Logging => LoggingActor}
 import java.util.UUID
-import org.joda.time.{DateTimeZone, DateTime, Seconds}
 import scalaz._
-import scalaz.syntax.applicative._
+import Scalaz._
 
 // TODO: implement actor using persistence?
 trait SignatureServer extends MerkleTrees with LoggingActor with ValidationFunctions {
@@ -23,7 +21,7 @@ trait SignatureServer extends MerkleTrees with LoggingActor with ValidationFunct
     val validCreationDate = if (certificate.createdAt.isBeforeNow)             success(()) else failureNel("certificate has an invalid creation date")
     val validServer       = if (certificate.server == self.path)               success(()) else failureNel("certificate is bound to a different signature server")
 
-    validRequest |@| validCreationDate |@| validServer
+    validRequest +++ validCreationDate +++ validServer
   }
 
   def receive = {
@@ -53,16 +51,15 @@ trait SignatureServer extends MerkleTrees with LoggingActor with ValidationFunct
           sender() ! -\/(s"Failed to revoke certificate: ${err.list.mkString("; ")}")
       }
 
-    case Timestamp(data, client) =>
+    case GetTimestamp(data, client) =>
       if (certificates.contains(client.id)) {
-        val offset = Seconds.secondsBetween(certificates(client.id).createdAt, new DateTime(DateTimeZone.UTC))
-        val timestamp = ??? // FIXME: hash-tree timestamp for (data, clientId)
+        // FIXME: need to ensure 1 sec. rounds are implemented here!
+        //val offset = Seconds.secondsBetween(certificates(client.id).createdAt, new DateTime(DateTimeZone.UTC))
+        val (timestamp, newState) = append((data, client.id, self.path), state)
+        val timestampProof = ???
+        state = newState
 
-        if (???) {
-          sender() ! \/-(timestamp)
-        } else {
-          sender() ! -\/(s"Failed to timestamp $data for client $client: ???")
-        }
+        sender() ! \/-(Timestamp(timestamp, timestampProof))
       } else {
         sender() ! -\/(s"Failed to timestamp $data for client $client")
       }

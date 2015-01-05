@@ -2,6 +2,7 @@ package cakesolutions.signing
 
 import scalaz._
 
+// TODO: implement ideas of "Fractal Merkle Tree Representation and Traversal" by M.Jakobsson, T.Leighton, S.Micali and M.Szydlo
 trait MerkleTrees extends TreeFunctions {
   this: HashingFunction =>
 
@@ -10,7 +11,7 @@ trait MerkleTrees extends TreeFunctions {
   protected case class State(iv: Hash = random, leafHash: Hash = zero, roots: List[MerkleTree] = List.empty[MerkleTree], offset: Int = 0)
 
   def append[D](data: D, state: State): (Hash, State) = {
-    val State(iv, leafHash, roots) = state
+    val State(iv, leafHash, roots, offset) = state
     val dataHash = hash[D](data)
     val maskingHash = hash[Hash](leafHash, iv)
     val newLeafHash = hash[Hash](maskingHash, dataHash, hash[Int](0))

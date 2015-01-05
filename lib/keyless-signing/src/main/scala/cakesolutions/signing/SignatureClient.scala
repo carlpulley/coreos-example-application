@@ -1,24 +1,37 @@
-package cakesolutions.signing
+package cakesolutions
+
+package signing
 
 import akka.actor.ActorRef
 import akka.pattern.ask
+import akka.util.Timeout
+import java.util.concurrent.TimeUnit
 import org.joda.time.{DateTimeZone, DateTime, Seconds}
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration._
 import scalaz._
-import scalaz.syntax.applicative._
+import Scalaz._
 
-trait SignatureClient extends MerkleTrees {
+trait SignatureClient extends MerkleTrees with Configuration {
   this: HashingFunction =>
 
   import SignatureProtocol._
 
+  implicit val timeout = Timeout(config.getDuration("signing.timeout", TimeUnit.SECONDS).seconds)
+
   /**
-   * Actor implementation of the signature server - to be defined in client code.
+   * Dispatcher for running our futures.
+   */
+  implicit def executionContext: ExecutionContext
+
+  /**
+   * Reference to signature server actor.
    */
   def signatureServer: ActorRef
 
+  // TODO: implement ideas of "Almost Optimal Hash Sequence Traversal" by D.Coppersmith and M.Jakobsson
   // NOTE: here we memoize our hash sequence traversal function for efficiency (i.e. we trade time for space)
-  private val hashTraversal = Memo.immutableHashMapMemo {
+  private val hashTraversal = Memo.immutableHashMapMemo[(Int, Hash), (List[Hash], List[MerkleTree])] {
     case (lifetime: Int, secret: Hash) =>
       val keyHashChain = (1 to lifetime).foldRight(List(secret)) {
         case (_, hashChain) =>
@@ -87,7 +100,7 @@ trait SignatureClient extends MerkleTrees {
     val dataHash = hash(rawData)
     val data = hash(dataHash, auth)
 
-    (signatureServer ? Timestamp(data, certificate.client)).mapTo[\/[String, Hash]].map {
+    (signatureServer ? GetTimestamp(data, certificate.client)).mapTo[\/[String, Timestamp]].map {
       case \/-(timestamp) =>
         \/-(Signature(certificate.client, offset, auth, authProof, timestamp))
 
@@ -106,10 +119,12 @@ trait SignatureClient extends MerkleTrees {
   def verifySignature(signature: Signature, certificate: PublicKeyCertificate): ValidationNel[String, Unit] = {
     val validClientId  = if (signature.client.id == certificate.client.id)                                success(()) else failureNel("client IDs fail to match")
     val validRootHash  = if (rootHash(signature.auth, signature.authProof) == certificate.publicKey.root) success(()) else failureNel("signature fails to compute certificate root hash")
-    val validTimestamp = ???
-    val validServerId  = if (??? == certificate.server) success(()) else failureNel("signature is bound to a different server")
+    val timestamp      = ??? // FIXME: extract from signature.data and signature.dataProof
+    val validTimestamp = if (timestamp == certificate.createdAt.plus(signature.offset))                   success(()) else failureNel("signature has an incorrect timestamp")
+    val serverPath     = ??? // FIXME: extract from signature.data and signature.dataProof
+    val validServerId  = if (serverPath == certificate.server)                                            success(()) else failureNel("signature is bound to a different server")
 
-    validClientId |@| validRootHash |@| validTimestamp |@| validServerId
+    validClientId +++ validRootHash +++ validTimestamp +++ validServerId
   }
 
 }

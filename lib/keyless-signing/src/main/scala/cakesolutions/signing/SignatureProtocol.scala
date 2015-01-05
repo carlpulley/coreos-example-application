@@ -38,13 +38,14 @@ object SignatureProtocol extends ValidationFunctions {
   case class PublicKey(seed: Hash, root: Hash)
   case class PublicKeyCertificate(client: ClientId, publicKey: PublicKey, createdAt: DateTime, server: ActorPath)
   case class RevocationNote(auth: Hash, authProof: List[Direction])
-  case class Signature(client: ClientId, offset: Seconds, auth: Hash, authProof: List[Direction], data: Hash)
+  case class Signature(client: ClientId, offset: Seconds, auth: Hash, authProof: List[Direction], timestamp: Timestamp)
 
   /**
    * Signature server (actor) messages
    */
   case class Publish(certificate: PublicKeyCertificate)
   case class Revoke(certificate: PublicKeyCertificate, note: RevocationNote)
-  case class Timestamp(data: Hash, client: ClientId)
+  case class GetTimestamp(data: Hash, client: ClientId)
+  case class Timestamp(data: Hash, dataProof: List[Direction])
 
 }

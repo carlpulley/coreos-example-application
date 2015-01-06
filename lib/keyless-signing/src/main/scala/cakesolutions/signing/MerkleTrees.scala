@@ -14,7 +14,7 @@ trait MerkleTrees extends TreeFunctions {
     val State(iv, leafHash, roots, _) = state
     val dataHash = hash[D](data)
     val maskingHash = hash[Hash](leafHash, iv)
-    val newLeafHash = hash[Hash](maskingHash, dataHash, hash[Int](0))
+    val newLeafHash = hash[Hash](maskingHash, dataHash, hash[Long](0))
     val newRoots = balance(roots :+ leaf(TreeNode(newLeafHash, 0)))
 
     (reduce(newRoots).rootLabel.hash, State(iv, newLeafHash, newRoots))
@@ -29,7 +29,7 @@ trait MerkleTrees extends TreeFunctions {
 
       case initialRoots :+ root1 :+ root2 =>
         val rootLevel = root1.rootLabel.level.max(root2.rootLabel.level) + 1
-        val rootHash = hash(root1.rootLabel.hash, root2.rootLabel.hash, hash(rootLevel))
+        val rootHash = hash(root1.rootLabel.hash, root2.rootLabel.hash, hash[Long](rootLevel))
         reduce(initialRoots :+ node(TreeNode(rootHash, rootLevel), Stream(root1, root2)))
     }
   }
@@ -40,7 +40,7 @@ trait MerkleTrees extends TreeFunctions {
     roots match {
       case initialRoots :+ root1 :+ root2 if root1.rootLabel.level == root2.rootLabel.level =>
         val rootLevel = root1.rootLabel.level.max(root2.rootLabel.level) + 1
-        val rootHash = hash(root1.rootLabel.hash, root2.rootLabel.hash, hash(rootLevel))
+        val rootHash = hash(root1.rootLabel.hash, root2.rootLabel.hash, hash[Long](rootLevel))
         balance(initialRoots :+ node(TreeNode(rootHash, rootLevel), Stream(root1, root2)))
 
       case _ =>
@@ -85,9 +85,9 @@ trait MerkleTrees extends TreeFunctions {
         val l = level + path(index).level + 1
         path(index) match {
           case Left(child, _) =>
-            (hash(root, child, l), l)
+            (hash(root, child, hash[Long](l)), l)
           case Right(child, _) =>
-            (hash(child, root, l), l)
+            (hash(child, root, hash[Long](l)), l)
         }
     }._1
   }

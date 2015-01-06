@@ -46,6 +46,6 @@ object SignatureProtocol extends ValidationFunctions {
   case class Publish(certificate: PublicKeyCertificate)
   case class Revoke(certificate: PublicKeyCertificate, note: RevocationNote)
   case class GetTimestamp(data: Hash, client: ClientId)
-  case class Timestamp(data: Hash, dataProof: List[Direction])
+  case class Timestamp(data: Hash, dataProof: List[Direction], server: ActorPath)
 
 }

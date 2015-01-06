@@ -17,7 +17,6 @@ libraryDependencies ++= Seq(
   commons,
   joda_time,
   logback,
-  pickling,
   scalaz.core,
   typesafe
 )

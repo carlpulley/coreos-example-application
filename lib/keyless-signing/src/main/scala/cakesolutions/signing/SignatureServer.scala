@@ -14,8 +14,12 @@ trait SignatureServer extends MerkleTrees with LoggingActor with ValidationFunct
 
   import SignatureProtocol._
 
+  import context.dispatcher
+
   private case class Event(receivedAt: DateTime, sender: ActorRef, data: Hash)
   private case class SendTimestamp(period: DateTime)
+
+  val system = context.system
 
   // TODO: shard actor based on server and client ID?
   private var certificates = Map.empty[UUID, PublicKeyCertificate]
@@ -68,7 +72,7 @@ trait SignatureServer extends MerkleTrees with LoggingActor with ValidationFunct
     case GetTimestamp(data, client) =>
       if (certificates.contains(client.id)) {
         // We store received event hashes - scheduler is "responsible" for adding aggregated events to hash calendar
-        events = events :+ Event(new DateTime(DateTimeZone.UTC), sender(), hash((data, client.id, self.path)))
+        events = events :+ Event(new DateTime(DateTimeZone.UTC), sender(), hash((data, client.id)))
       } else {
         sender() ! -\/(s"Failed to timestamp $data for client $client")
       }
@@ -80,9 +84,9 @@ trait SignatureServer extends MerkleTrees with LoggingActor with ValidationFunct
       val receivers = events.filter(evt => Seconds.secondsBetween(evt.receivedAt, period).getSeconds == 0)
       events = events.filterNot(evt => Seconds.secondsBetween(evt.receivedAt, period).getSeconds == 0)
       val (timestamp, newState) = append(hash(receivers.map(_.data): _*), state)
-      val timestampProof = hashChain(offset, state.roots) // FIXME:
+      val timestampProof = hashChain(new DateTime(DateTimeZone.UTC).getMillis.toInt / 1000, state.roots)
       state = newState
-      receivers.foreach(_.sender ! \/-(Timestamp(timestamp, timestampProof)))
+      receivers.foreach(_.sender ! \/-(Timestamp(timestamp, timestampProof, self.path)))
   }
 
 }

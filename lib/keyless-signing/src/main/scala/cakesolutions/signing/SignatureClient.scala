@@ -22,6 +22,8 @@ trait SignatureClient extends MerkleTrees with LoggingActor with Configuration {
 
   implicit val timeout = Timeout(config.getDuration("signing.timeout", TimeUnit.SECONDS).seconds)
 
+  val system = context.system
+
   /**
    * Reference to signature server actor.
    */
@@ -119,15 +121,14 @@ trait SignatureClient extends MerkleTrees with LoggingActor with Configuration {
     val validClientId  = if (signature.client.id == certificate.client.id)                                success(()) else failureNel("client IDs fail to match")
     val validRootHash  = if (rootHash(signature.auth, signature.authProof) == certificate.publicKey.root) success(()) else failureNel("signature fails to compute certificate root hash")
     val timestamp      = signature.timestamp.dataProof.zipWithIndex.map {
-      case (Left(_), height) =>
+      case (Left(_, _), height) =>
         math.pow(2, height - 1).toInt
 
-      case (Right(_), _) =>
+      case (Right(_, _), _) =>
         0
     }.sum
     val validTimestamp = if (timestamp == certificate.createdAt.plus(signature.offset).getMillis / 1000)  success(()) else failureNel("signature has an incorrect timestamp")
-    val serverPath     = ??? // FIXME: extract from signature.timestamp.data and signature.timestamp.dataProof
-    val validServerId  = if (serverPath == certificate.server)                                            success(()) else failureNel("signature is bound to a different server")
+    val validServerId  = if (signature.timestamp.server == certificate.server)                            success(()) else failureNel("signature is bound to a different server")
 
     validClientId +++ validRootHash +++ validTimestamp +++ validServerId
   }

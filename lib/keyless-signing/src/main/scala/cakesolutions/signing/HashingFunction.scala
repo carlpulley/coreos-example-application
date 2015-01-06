@@ -36,7 +36,7 @@ trait HashingFunction extends Configuration {
     }
   }
 
-  lazy val zero: Hash = hash(Array[Byte](0))
+  lazy val zero: Hash = hash(new Array[Byte](0))
 
   def random: Hash = {
     val size = MessageDigest.getInstance(hashingId).getDigestLength

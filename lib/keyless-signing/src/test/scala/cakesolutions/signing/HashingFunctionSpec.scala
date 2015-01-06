@@ -15,7 +15,6 @@ class HashingFunctionSpec extends WordSpec with HashingFunction {
 
     "given an empty string" should {
       "calculate correct hash" in {
-        val x = hash("").value
         assert(hash("").value.toList == emptySHA256)
         assert(hash("").`type` == "SHA-256")
       }
@@ -47,7 +46,7 @@ class HashingFunctionSpec extends WordSpec with HashingFunction {
 
     "given string tuple" should {
       "calculate correct hash for \"one\" and \"two\"" in {
-        assert(hash("one", "two").value.toList == hexToBytes("c6a03acaa45a496c45889fe9b6d7b9bef92432327ba258da7fbf2b5aab195132"))
+        assert(hash("one", "two").value.toList == hexToBytes("5b943976d589db7ad78430e424770733f6505cae4b7e7b60aaa0d0028334a479"))
         assert(hash("one", "two").`type` == "SHA-256")
       }
     }
@@ -61,7 +60,7 @@ class HashingFunctionSpec extends WordSpec with HashingFunction {
 
     "given integer tuple" should {
       "calculate correct hash for 1 and 2" in {
-        assert(hash(1, 2).value.toList == hexToBytes("401862acdc27a66babb491ff855d7c37c47bbb817c31f47c8d85b38e451cfd5a"))
+        assert(hash(1, 2).value.toList == hexToBytes("5cde7fd4d4fd4a76d95d56f38d8f5f3708c89b41ceecd5f87263f3e29bf64164"))
         assert(hash(1, 2).`type` == "SHA-256")
       }
     }

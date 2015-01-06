@@ -22,8 +22,6 @@ trait SignatureClient extends MerkleTrees with LoggingActor with Configuration {
 
   implicit val timeout = Timeout(config.getDuration("signing.timeout", TimeUnit.SECONDS).seconds)
 
-  val system = context.system
-
   /**
    * Reference to signature server actor.
    */

@@ -18,5 +18,10 @@ libraryDependencies ++= Seq(
   joda_time,
   logback,
   scalaz.core,
-  typesafe
+  typesafe,
+  // Testing
+  scalatest     % "test",
+  scalacheck    % "test",
+  specs2        % "test",
+  akka.testkit  % "test"
 )

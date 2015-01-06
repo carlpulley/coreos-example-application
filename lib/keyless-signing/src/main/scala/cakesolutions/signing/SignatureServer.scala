@@ -19,8 +19,6 @@ trait SignatureServer extends MerkleTrees with LoggingActor with ValidationFunct
   private case class Event(receivedAt: DateTime, sender: ActorRef, data: Hash)
   private case class SendTimestamp(period: DateTime)
 
-  val system = context.system
-
   // TODO: shard actor based on server and client ID?
   private var certificates = Map.empty[UUID, PublicKeyCertificate]
   private var events = List.empty[Event]

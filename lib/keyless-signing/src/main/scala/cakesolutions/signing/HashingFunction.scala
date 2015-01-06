@@ -2,30 +2,41 @@ package cakesolutions
 
 package signing
 
+import java.io.{ByteArrayOutputStream, ObjectOutputStream}
 import java.security.{SecureRandom, MessageDigest}
-import akka.actor.ActorSystem
-import akka.serialization.SerializationExtension
 
 trait HashingFunction extends Configuration {
 
   import SignatureProtocol.Hash
 
-  def system: ActorSystem
-
   private val randomGen = SecureRandom.getInstance(config.getString("signing.algorithm.random"))
   val hashingId = config.getString("signing.algorithm.hash")
-  val serialization = SerializationExtension(system)
 
-  def hash(data: Array[Byte]): Hash = {
-    Hash(MessageDigest.getInstance(hashingId).digest(data), hashingId)
+  def hash(bytes: Array[Byte]): Hash = {
+    Hash(MessageDigest.getInstance(hashingId).digest(bytes), hashingId)
   }
 
   def hash[D](data: D*): Hash = {
-    val serializer = serialization.findSerializerFor(data)
-    hash(serializer.toBinary(data))
+    val byteStream = new ByteArrayOutputStream(1024)
+    val objectStream = new ObjectOutputStream(byteStream)
+    if (data.isEmpty) {
+      zero
+    } else if (data.length == 1) {
+      data.head match {
+        case obj: String =>
+          hash(obj.getBytes("UTF-8"))
+
+        case obj =>
+          objectStream.writeObject(obj)
+          hash(byteStream.toByteArray)
+      }
+    } else {
+      objectStream.writeObject(data)
+      hash(byteStream.toByteArray)
+    }
   }
 
-  val zero: Hash = hash(Array[Byte](0))
+  lazy val zero: Hash = hash(Array[Byte](0))
 
   def random: Hash = {
     val size = MessageDigest.getInstance(hashingId).getDigestLength
